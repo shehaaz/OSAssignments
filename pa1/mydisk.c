@@ -26,7 +26,7 @@ int mydisk_init(char const *file_name, int nblocks, int type)
 	disk_type = type;
 	max_blocks = nblocks;
 
-	thefile=fopen(file_name,"w");
+	thefile=fopen(file_name,"w+");
 
 	if(thefile != NULL){
 		int i;
@@ -35,7 +35,7 @@ int mydisk_init(char const *file_name, int nblocks, int type)
 			//'\0' is the integer value of "0"
 			fprintf(thefile,
 					"%d%d%d%d%d%d%d%d%d%d",
-					'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0');
+					'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'); //how big is integers in C? sizeof('/0') = 4 bytes
 		}
 
 		return 0;
@@ -57,7 +57,7 @@ void mydisk_close()
 int mydisk_read_block(int block_id, void *buffer)
 {
 	//block_id should be positive and not sure if the buffer != NULL
-	if(0 < block_id <= max_blocks && buffer != NULL){
+	if(0 <= block_id <= max_blocks && buffer != NULL){
 		if (cache_enabled) {
 			/* TODO: 1. check if the block is cached
 			 * 2. if not create a new entry for the block and read from disk
@@ -68,8 +68,11 @@ int mydisk_read_block(int block_id, void *buffer)
 		} else {
 			/* TODO: use standard C function to read from disk
 			 */
+			//Buffer is guaranteed to have BLOCK_SIZE bytes; is this real Bytes or the bytes in the FILE?
+			//e.g: Max_blocks=5 & block_size = 2:
+			//you will be reading 16 objects of size 4 Bytes each
 			fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-			fread(buffer,1,BLOCK_SIZE*8,thefile);
+			fread(buffer,sizeof('\0'),BLOCK_SIZE*8,thefile);
 			return 0;
 		}
 	}
@@ -83,9 +86,11 @@ int mydisk_write_block(int block_id, void *buffer)
 	/* TODO: this one is similar to read_block() except that
 	 * you need to mark it dirty
 	 */
-	if(block_id > 0 && buffer != NULL){
+	 //how do you mark a block as dirty? should blocks be structs?
+	 
+	if(0 <= block_id <= max_blocks && buffer != NULL){
 		fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-		fwrite(buffer,1,BLOCK_SIZE*8,thefile);
+		fwrite(buffer,sizeof('\0'),BLOCK_SIZE*8,thefile);
 		return 0;
 	}
 	else{
