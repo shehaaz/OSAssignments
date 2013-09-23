@@ -20,7 +20,7 @@ int init_cache(int nblocks)
 	/* TODO: allocate proper data structure (ring buffer)
 	 * initialize entry data so that the the ring buffer is empty
 	 */
-
+	//use circular array showed in class
 	return 0;
 }
 

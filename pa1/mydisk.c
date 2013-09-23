@@ -72,7 +72,7 @@ int mydisk_read_block(int block_id, void *buffer)
 			//e.g: Max_blocks=5 & block_size = 2:
 			//you will be reading 16 objects of size 4 Bytes each
 			fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-			fread(buffer,sizeof('\0'),BLOCK_SIZE*8,thefile);
+			fread(buffer,4,sizeof(buffer),thefile);
 			return 0;
 		}
 	}
@@ -86,11 +86,11 @@ int mydisk_write_block(int block_id, void *buffer)
 	/* TODO: this one is similar to read_block() except that
 	 * you need to mark it dirty
 	 */
-	 //how do you mark a block as dirty? should blocks be structs?
-	 
+	//how do you mark a block as dirty? should blocks be structs?
+
 	if(0 <= block_id <= max_blocks && buffer != NULL){
 		fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-		fwrite(buffer,sizeof('\0'),BLOCK_SIZE*8,thefile);
+		fwrite(buffer,4,sizeof(buffer),thefile);
 		return 0;
 	}
 	else{
@@ -115,6 +115,29 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	 * for each block access
 	 */
 
+	//looks like we have to use structs
+	int start_block_id, stop_block_id;
+
+	start_block_id = start_address/BLOCK_SIZE;
+
+	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
+
+	char temp[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
+
+	int i;
+
+	for(i=start_block_id; i<= stop_block_id; i++){
+		mydisk_read_block(i,temp); //read block into temp
+	}
+	memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
+//	if(start_address % BLOCK_SIZE  == 0){
+//		mydisk_read_block(start_address,buffer);
+//	}
+//	else{
+//		char temp[BLOCK_SIZE];
+//		mydisk_read_block(start_address/BLOCK_SIZE,temp);
+//		memcpy(buffer,&temp[start_address],nbytes);
+//	}
 
 	return 0;
 }
@@ -125,5 +148,21 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	 * When a block is modified partially, you need to first read the block,
 	 * modify the portion and then write the whole block back
 	 */
+
+	int start_block_id, stop_block_id;
+
+	start_block_id = start_address/BLOCK_SIZE;
+	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
+
+	char temp_reader[start_address%BLOCK_SIZE];
+	mydisk_read_block(start_block_id,temp_reader);
+
+	char result[sizeof(temp_reader)+nbytes];
+
+	strcat(result,temp_reader);
+	strcat(result, buffer);
+
+	mydisk_write_block(start_block_id,result);
+
 	return 0;
 }
