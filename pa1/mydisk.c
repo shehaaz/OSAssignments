@@ -130,14 +130,6 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 		mydisk_read_block(i,temp); //read block into temp
 	}
 	memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
-//	if(start_address % BLOCK_SIZE  == 0){
-//		mydisk_read_block(start_address,buffer);
-//	}
-//	else{
-//		char temp[BLOCK_SIZE];
-//		mydisk_read_block(start_address/BLOCK_SIZE,temp);
-//		memcpy(buffer,&temp[start_address],nbytes);
-//	}
 
 	return 0;
 }
@@ -155,14 +147,26 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
 	char temp_reader[start_address%BLOCK_SIZE];
+
 	mydisk_read_block(start_block_id,temp_reader);
+	//printf("%s",temp_reader);
 
-	char result[sizeof(temp_reader)+nbytes];
+	char result[start_address%BLOCK_SIZE + nbytes];
 
-	strcat(result,temp_reader);
-	strcat(result, buffer);
+	memset(result, '\0', sizeof(result));
+	memcpy(result,&temp_reader[0],(start_address%BLOCK_SIZE) -1);
 
+	int i,j;
+	for(j=0 ; j<nbytes; j++){
+		for(i=start_address; i<= start_address+nbytes; i++){
+			memset(&result[i], &buffer[j], nbytes);
+		}
+	}
+
+	printf("%s",result);
 	mydisk_write_block(start_block_id,result);
+
+
 
 	return 0;
 }
