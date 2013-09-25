@@ -72,8 +72,8 @@ int mydisk_read_block(int block_id, void *buffer)
 			//Buffer is guaranteed to have BLOCK_SIZE bytes; is this real Bytes or the bytes in the FILE?
 			//e.g: Max_blocks=5 & block_size = 2:
 			//you will be reading 16 objects of size 4 Bytes each
-			fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-			fread(buffer,4,sizeof(buffer),thefile);
+			fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
+			fread(buffer,1,BLOCK_SIZE,thefile);
 			return 0;
 		}
 	}
@@ -90,8 +90,8 @@ int mydisk_write_block(int block_id, void *buffer)
 	//how do you mark a block as dirty? should blocks be structs?
 
 	if(0 <= block_id <= max_blocks && buffer != NULL){
-		fseek(thefile,block_id*BLOCK_SIZE*8,SEEK_SET);
-		fwrite(buffer,4,sizeof(buffer),thefile);
+		fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
+		fwrite(buffer,1,BLOCK_SIZE,thefile);
 		return 0;
 	}
 	else{
@@ -127,8 +127,10 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 
 	int i;
 
+	offset = 0;
 	for(i=start_block_id; i<= stop_block_id; i++){
-		mydisk_read_block(i,temp); //read block into temp
+		mydisk_read_block(i,temp + offset); //read block into temp
+		offset += BLOCK_SIZE;
 	}
 	memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
 
@@ -147,26 +149,40 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	start_block_id = start_address/BLOCK_SIZE;
 	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
-	char * temp_buffer = (char *) buffer;
+	char temp_reader[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
 
-	char temp_reader[(start_address%BLOCK_SIZE)-1];
 
-	printf("size of temp_reader: %d\n",sizeof(temp_reader));
 
-	mydisk_read_block(start_block_id,temp_reader);
+//	char * buff2 = (char *) test_reader;
+//
+//	char * buff3 = (char *) test_reader + start_address;
 
-	char *result = malloc(sizeof(char) * (start_address + nbytes-1));
+	int offset = 0;
+	int i;
+	for(i=start_block_id; i<= stop_block_id; i++){
+		mydisk_read_block(i,temp_reader + offset); //read block into temp
+		offset += BLOCK_SIZE;
+	}
 
-	//printf("%d",sizeof(result));
 
-	memcpy(&result[0],&temp_reader[0],sizeof(temp_reader));
-	memcpy(&result[start_address],&temp_buffer[0],nbytes);
 
-	mydisk_write_block(start_block_id,result);
+	memcpy(temp_reader + start_address%BLOCK_SIZE,buffer,nbytes);
+//
+//	printf("%s",temp_reader);
+//	printf("%s",temp_reader+144);
 
-	printf("size of result: %d\n",sizeof(result));
+	offset = 0;
+	for(i=start_block_id; i<= stop_block_id; i++){
+		mydisk_write_block(i,temp_reader+offset); //read block into temp
+		offset += BLOCK_SIZE;
+	}
 
-	printf("content of result: %s\n",&result[144]);
+//	char test_reader[BLOCK_SIZE];
+//
+//	mydisk_read_block(0,test_reader);
+//
+//	printf("%s",test_reader);
+
 	return 0;
 
 }
