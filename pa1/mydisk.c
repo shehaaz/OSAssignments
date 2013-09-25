@@ -117,6 +117,8 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	 */
 
 	//looks like we have to use structs
+
+	if(0 <= start_address && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
 	int start_block_id, stop_block_id;
 
 	start_block_id = start_address/BLOCK_SIZE;
@@ -135,6 +137,9 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
 
 	return 0;
+	}else{
+		return 1;
+	}
 }
 
 int mydisk_write(int start_address, int nbytes, void *buffer)
@@ -152,11 +157,6 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	char temp_reader[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
 
 
-
-//	char * buff2 = (char *) test_reader;
-//
-//	char * buff3 = (char *) test_reader + start_address;
-
 	int offset = 0;
 	int i;
 	for(i=start_block_id; i<= stop_block_id; i++){
@@ -167,21 +167,13 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 
 
 	memcpy(temp_reader + start_address%BLOCK_SIZE,buffer,nbytes);
-//
-//	printf("%s",temp_reader);
-//	printf("%s",temp_reader+144);
+
 
 	offset = 0;
 	for(i=start_block_id; i<= stop_block_id; i++){
 		mydisk_write_block(i,temp_reader+offset); //read block into temp
 		offset += BLOCK_SIZE;
 	}
-
-//	char test_reader[BLOCK_SIZE];
-//
-//	mydisk_read_block(0,test_reader);
-//
-//	printf("%s",test_reader);
 
 	return 0;
 
