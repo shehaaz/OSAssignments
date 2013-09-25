@@ -119,24 +119,24 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	//looks like we have to use structs
 
 	if(0 <= start_address && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
-	int start_block_id, stop_block_id;
+		int start_block_id, stop_block_id;
 
-	start_block_id = start_address/BLOCK_SIZE;
+		start_block_id = start_address/BLOCK_SIZE;
 
-	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
+		stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
-	char temp[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
+		char temp[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
 
-	int i;
+		int i;
 
-	offset = 0;
-	for(i=start_block_id; i<= stop_block_id; i++){
-		mydisk_read_block(i,temp + offset); //read block into temp
-		offset += BLOCK_SIZE;
-	}
-	memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
+		offset = 0;
+		for(i=start_block_id; i<= stop_block_id; i++){
+			mydisk_read_block(i,temp + offset); //read block into temp
+			offset += BLOCK_SIZE;
+		}
+		memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
 
-	return 0;
+		return 0;
 	}else{
 		return 1;
 	}
@@ -149,32 +149,36 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	 * modify the portion and then write the whole block back
 	 */
 
-	int start_block_id, stop_block_id;
+	if(0 <= start_address && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
+		int start_block_id, stop_block_id;
 
-	start_block_id = start_address/BLOCK_SIZE;
-	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
+		start_block_id = start_address/BLOCK_SIZE;
+		stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
-	char temp_reader[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
+		char temp_reader[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
 
 
-	int offset = 0;
-	int i;
-	for(i=start_block_id; i<= stop_block_id; i++){
-		mydisk_read_block(i,temp_reader + offset); //read block into temp
-		offset += BLOCK_SIZE;
+		int offset = 0;
+		int i;
+		for(i=start_block_id; i<= stop_block_id; i++){
+			mydisk_read_block(i,temp_reader + offset); //read block into temp
+			offset += BLOCK_SIZE;
+		}
+
+
+
+		memcpy(temp_reader + start_address%BLOCK_SIZE,buffer,nbytes);
+
+
+		offset = 0;
+		for(i=start_block_id; i<= stop_block_id; i++){
+			mydisk_write_block(i,temp_reader+offset); //read block into temp
+			offset += BLOCK_SIZE;
+		}
+
+		return 0;
+	}else{
+		return 1;
 	}
-
-
-
-	memcpy(temp_reader + start_address%BLOCK_SIZE,buffer,nbytes);
-
-
-	offset = 0;
-	for(i=start_block_id; i<= stop_block_id; i++){
-		mydisk_write_block(i,temp_reader+offset); //read block into temp
-		offset += BLOCK_SIZE;
-	}
-
-	return 0;
 
 }
