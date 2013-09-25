@@ -1,6 +1,7 @@
 #include "mydisk.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 FILE *thefile;     /* the file that stores all blocks */
 int max_blocks;    /* max number of blocks given at initialization */
@@ -141,61 +142,31 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	 * modify the portion and then write the whole block back
 	 */
 
-
 	int start_block_id, stop_block_id;
 
 	start_block_id = start_address/BLOCK_SIZE;
 	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
-	char temp_reader[start_address%BLOCK_SIZE];
+	char * temp_buffer = (char *) buffer;
+
+	char temp_reader[(start_address%BLOCK_SIZE)-1];
+
+	printf("size of temp_reader: %d\n",sizeof(temp_reader));
 
 	mydisk_read_block(start_block_id,temp_reader);
-	//printf("%s",temp_reader);
 
-	char result[start_address%BLOCK_SIZE + nbytes];
+	char *result = malloc(sizeof(char) * (start_address + nbytes-1));
 
-	memset(result, '\0', sizeof(result));
-	memcpy(result,&temp_reader[0],(start_address%BLOCK_SIZE) -1);
-//	memmove(&result[start_address], &buffer[0], nbytes);
+	//printf("%d",sizeof(result));
 
-//	int i,j;
-//	for(j=0 ; j<(start_address%BLOCK_SIZE + nbytes); j++){
-//		for(i=start_address; i<= nbytes; i++){
-//			memmove(&result[j], &buffer[i], 1);
-//		}
-//	}
+	memcpy(&result[0],&temp_reader[0],sizeof(temp_reader));
+	memcpy(&result[start_address],&temp_buffer[0],nbytes);
 
-	printf("%s",result);
 	mydisk_write_block(start_block_id,result);
 
+	printf("size of result: %d\n",sizeof(result));
 
-
+	printf("content of result: %s\n",&result[144]);
 	return 0;
 
-
-
-
-	//int start_block_id, stop_block_id;
-//
-//	start_block_id = start_address/BLOCK_SIZE;
-//	stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
-//
-//	char temp_reader[(stop_block_id - start_block_id) * BLOCK_SIZE];
-//	int i;
-//	for(i=start_block_id; i<= stop_block_id;i++){
-//		mydisk_read_block(i,temp_reader);
-//	}
-//	printf("%s", temp_reader);
-//	memcpy(temp_reader+start_address,buffer,nbytes);
-//
-//	mydisk_write_block(start_block_id,temp_reader);
-//
-//	int j;
-//	for(j=start_block_id; j<= stop_block_id;j++){
-//		//mydisk_write_block(j,temp_reader);
-//	}
-//
-//
-//
-//	return 0;
 }
