@@ -14,7 +14,6 @@ typedef struct cache_entry
 
 int cache_blocks;  /* number of blocks for the cache buffer */
 cache_entry *HeadCacheBlock;
-cache_entry *Kick;
 int counter =0;
 
 /* TODO: some helper functions e.g. find_cached_entry(block_id) */
@@ -77,7 +76,7 @@ int close_cache()
 	for(i =0; i <= cache_blocks;i++){
 		current = a;
 		a=current->next;
-		// free(current);
+		free(current);
 	}
 
 
