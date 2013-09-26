@@ -4,12 +4,17 @@
 #include "mydisk.h"
 
 /* The cache entry struct */
-struct cache_entry
+typedef struct
 {
 	int block_id;
 	int is_dirty;
 	char content[BLOCK_SIZE];
-};
+} cache_entry;
+
+typedef struct {
+	cache_entry *pcache_entry;
+
+} cache_collection;
 
 int cache_blocks;  /* number of blocks for the cache buffer */
 
@@ -21,6 +26,7 @@ int init_cache(int nblocks)
 	 * initialize entry data so that the the ring buffer is empty
 	 */
 	//use circular array showed in class
+
 	return 0;
 }
 

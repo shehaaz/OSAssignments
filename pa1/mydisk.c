@@ -50,9 +50,8 @@ void mydisk_close()
 {
 	/* TODO: clean up whatever done in mydisk_init()*/
 
-	free(thefile);
-	thefile = NULL;
 	fclose(thefile);
+	thefile = NULL;
 }
 
 int mydisk_read_block(int block_id, void *buffer)
@@ -118,7 +117,7 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 
 	//looks like we have to use structs
 
-	if(0 <= start_address && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
+	if(start_address >= 0 && nbytes >= 0 && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
 		int start_block_id, stop_block_id;
 
 		start_block_id = start_address/BLOCK_SIZE;
@@ -149,7 +148,7 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	 * modify the portion and then write the whole block back
 	 */
 
-	if(0 <= start_address && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
+	if(start_address >= 0 && nbytes >= 0 && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
 		int start_block_id, stop_block_id;
 
 		start_block_id = start_address/BLOCK_SIZE;
@@ -172,7 +171,7 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 
 		offset = 0;
 		for(i=start_block_id; i<= stop_block_id; i++){
-			mydisk_write_block(i,temp_reader+offset); //read block into temp
+			mydisk_write_block(i,temp_reader+offset); //write block into temp
 			offset += BLOCK_SIZE;
 		}
 
