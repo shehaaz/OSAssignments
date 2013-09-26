@@ -13,7 +13,7 @@ static char buffer2[MAX_BLOCKS * BLOCK_SIZE];
 void report_latency(int latency)
 {
 	/* TODO: If debugging, uncomment the below line to see the latency */
-	/* printf("Operation latency: %d\n", latency); */
+	//printf("Operation latency: %d\n", latency);
 }
 
 void rand_str(char *buf, int size)

@@ -7,6 +7,7 @@ FILE *thefile;     /* the file that stores all blocks */
 int max_blocks;    /* max number of blocks given at initialization */
 int disk_type;     /* disk type, 0 for HDD and 1 for SSD */
 int cache_enabled = 1; /* is cache enabled? 0 no, 1 yes */
+int Disk_Latency = 0;
 
 
 //store the cache_block in a limited size queue. fetching using the block_id
@@ -19,6 +20,12 @@ int mydisk_init(char const *file_name, int nblocks, int type)
 	 */
 	disk_type = type;
 	max_blocks = nblocks;
+
+	if(!(disk_type==0 || disk_type==1)){
+
+		printf("The disk type is not valid");
+		return 1;
+	}
 
 	thefile=fopen(file_name,"w+");
 
@@ -151,6 +158,13 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 		}
 		memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
 
+		//calculate latency
+		if(disk_type == 0){
+			report_latency(HDD_SEEK+max_blocks*HDD_READ_LATENCY);
+		}else{
+			report_latency(max_blocks*SSD_READ_LATENCY);
+		}
+
 		return 0;
 	}else{
 		return 1;
@@ -189,6 +203,13 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 		for(i=start_block_id; i<= stop_block_id; i++){
 			mydisk_write_block(i,temp_reader+offset); //write block into temp
 			offset += BLOCK_SIZE;
+		}
+
+		//calculate latency
+		if(disk_type == 0){
+			report_latency(HDD_SEEK+max_blocks*HDD_WRITE_LATENCY);
+		}else{
+			report_latency(max_blocks*SSD_WRITE_LATENCY);
 		}
 
 		return 0;
