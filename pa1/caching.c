@@ -9,11 +9,12 @@ typedef struct cache_entry
 	int block_id;
 	int is_dirty;
 	char content[BLOCK_SIZE];
-	struct cache_block *next;
+	struct cache_entry *next;
 }cache_entry;
 
 int cache_blocks;  /* number of blocks for the cache buffer */
 cache_entry *HeadCacheBlock;
+cache_entry *Kick;
 int counter =0;
 
 /* TODO: some helper functions e.g. find_cached_entry(block_id) */
@@ -50,7 +51,7 @@ int init_cache(int nblocks)
 	//Joining the ends of the queue together
 	if (nblocks != 0)
 		tail->next = HeadCacheBlock;
-	printf("\nCache successfully initialized");
+	//printf("\nCache successfully initialized");
 	return 0;
 }
 
@@ -61,9 +62,10 @@ int close_cache()
 	cache_entry *a;
 	current = HeadCacheBlock;
 	int i;
-	for(i = 0;i<=cache_blocks;i++){
+	for(i = 0;i<cache_blocks;i++){
 		if (current->is_dirty == 1){
-			mydisk_write_block(current->block_id,current->content);
+			fseek(thefile,current->block_id*BLOCK_SIZE,SEEK_SET);
+			fwrite(current->content,1,BLOCK_SIZE,thefile);
 			current->is_dirty = 0;
 		}
 		current = current->next;
@@ -75,7 +77,7 @@ int close_cache()
 	for(i =0; i <= cache_blocks;i++){
 		current = a;
 		a=current->next;
-		free(current);
+		// free(current);
 	}
 
 
@@ -92,15 +94,15 @@ void *get_cached_block(int block_id)
 	cache_entry *current;
 	current=HeadCacheBlock;
 	int i;
-	for(i = 0;i<=cache_blocks;i++){
+	for(i = 0;i<cache_blocks;i++){
 		if (current->block_id==block_id) {
 			return current;
 		}
+		current =  current->next;
 	}
 
 	return NULL;
 
-	//return NULL;
 }
 
 void *create_cached_block(int block_id)
@@ -117,6 +119,7 @@ void *create_cached_block(int block_id)
 	current=HeadCacheBlock;
 	for(i =0; i < counter; i++){
 		current->next;
+		if(cache_blocks<4) cache_blocks++;
 	}
 	// Modify the current block
 	current->block_id = block_id;
@@ -132,7 +135,7 @@ void mark_dirty (int block_id)
 	cache_entry *current;
 	current=HeadCacheBlock;
 	int i;
-	for(i = 0;i<=cache_blocks;i++){
+	for(i = 0;i< cache_blocks;i++){
 		if (current->block_id == block_id){
 			current->is_dirty = 1;
 		}

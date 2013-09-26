@@ -6,15 +6,8 @@
 FILE *thefile;     /* the file that stores all blocks */
 int max_blocks;    /* max number of blocks given at initialization */
 int disk_type;     /* disk type, 0 for HDD and 1 for SSD */
-int cache_enabled = 0; /* is cache enabled? 0 no, 1 yes */
+int cache_enabled = 1; /* is cache enabled? 0 no, 1 yes */
 
-typedef struct cache_block {
-
-	int block_id;
-	FILE *cache_file;
-	int dirty_block; // 1=Dirty Block
-
-} cache_block;
 
 //store the cache_block in a limited size queue. fetching using the block_id
 //after fetching manipulate the cache_file
@@ -64,6 +57,13 @@ int mydisk_read_block(int block_id, void *buffer)
 			 * 3. fill the requested buffer with the data in the entry
 			 * 4. return proper return code
 			 */
+			if (get_cached_block(block_id) != NULL){
+				buffer = get_cached_block(block_id);
+			}else{
+				create_cached_block(block_id);
+				fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
+				fread(buffer,1,BLOCK_SIZE,thefile);
+			}
 			return 0;
 		} else {
 			/* TODO: use standard C function to read from disk
@@ -89,9 +89,25 @@ int mydisk_write_block(int block_id, void *buffer)
 	//how do you mark a block as dirty? should blocks be structs?
 
 	if(0 <= block_id <= max_blocks && buffer != NULL){
-		fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
-		fwrite(buffer,1,BLOCK_SIZE,thefile);
-		return 0;
+		if (cache_enabled) {
+			/* TODO: 1. check if the block is cached
+			 * 2. if not create a new entry for the block and read from disk
+			 * 3. fill the requested buffer with the data in the entry
+			 * 4. return proper return code
+			 */
+			if (get_cached_block(block_id) != NULL){
+				mark_dirty(block_id);
+			}else{
+				create_cached_block(block_id);
+				fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
+				fwrite(buffer,1,BLOCK_SIZE,thefile);
+			}
+			return 0;
+		} else {
+			fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
+			fwrite(buffer,1,BLOCK_SIZE,thefile);
+			return 0;
+		}
 	}
 	else{
 		return 1;
@@ -115,7 +131,7 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	 * for each block access
 	 */
 
-	//looks like we have to use structs
+
 
 	if(start_address >= 0 && nbytes >= 0 && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
 		int start_block_id, stop_block_id;
