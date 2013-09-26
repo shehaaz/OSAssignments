@@ -118,8 +118,7 @@ void *create_cached_block(int block_id)
 	cache_entry *current;
 	current=HeadCacheBlock;
 	for(i =0; i < counter; i++){
-		current->next;
-		//if(cache_blocks<4) cache_blocks++;
+		HeadCacheBlock = current->next;
 	}
 	// Modify the current block
 	current->block_id = block_id;
