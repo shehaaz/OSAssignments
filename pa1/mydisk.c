@@ -33,10 +33,9 @@ int mydisk_init(char const *file_name, int nblocks, int type)
 		int i;
 		for (i = 0; i < (nblocks*BLOCK_SIZE); ++i)
 		{
-			//'\0' is the integer value of "0"
 			fprintf(thefile,
 					"%d%d%d%d%d%d%d%d%d%d",
-					'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'); //how big is integers in C? sizeof('/0') = 4 bytes
+					'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0');
 		}
 
 		return 0;
@@ -56,7 +55,7 @@ void mydisk_close()
 
 int mydisk_read_block(int block_id, void *buffer)
 {
-	//block_id should be positive and not sure if the buffer != NULL
+
 	if(0 <= block_id <= max_blocks && buffer != NULL){
 		if (cache_enabled) {
 			/* TODO: 1. check if the block is cached
@@ -75,9 +74,6 @@ int mydisk_read_block(int block_id, void *buffer)
 		} else {
 			/* TODO: use standard C function to read from disk
 			 */
-			//Buffer is guaranteed to have BLOCK_SIZE bytes; is this real Bytes or the bytes in the FILE?
-			//e.g: Max_blocks=5 & block_size = 2:
-			//you will be reading 16 objects of size 4 Bytes each
 			fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
 			fread(buffer,1,BLOCK_SIZE,thefile);
 			return 0;
@@ -93,7 +89,7 @@ int mydisk_write_block(int block_id, void *buffer)
 	/* TODO: this one is similar to read_block() except that
 	 * you need to mark it dirty
 	 */
-	//how do you mark a block as dirty? should blocks be structs?
+
 
 	if(0 <= block_id <= max_blocks && buffer != NULL){
 		if (cache_enabled) {
@@ -123,8 +119,7 @@ int mydisk_write_block(int block_id, void *buffer)
 
 int mydisk_read(int start_address, int nbytes, void *buffer)
 {
-	int offset, remaining, amount, block_id;
-	int cache_hit = 0, cache_miss = 0;
+	int jump_BLOCK_SIZE,start_block_id, stop_block_id, amount_to_read;
 
 	/* TODO: 1. first, always check the parameters
 	 * 2. a loop which process one block each time
@@ -138,25 +133,33 @@ int mydisk_read(int start_address, int nbytes, void *buffer)
 	 * for each block access
 	 */
 
-
-
 	if(start_address >= 0 && nbytes >= 0 && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
-		int start_block_id, stop_block_id;
+
 
 		start_block_id = start_address/BLOCK_SIZE;
 
 		stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
-		char temp[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
+		amount_to_read = (stop_block_id-start_block_id+1) * BLOCK_SIZE;
+
+		char temp_reader[amount_to_read];
 
 		int i;
 
-		offset = 0;
+
+		jump_BLOCK_SIZE = 0;
 		for(i=start_block_id; i<= stop_block_id; i++){
-			mydisk_read_block(i,temp + offset); //read block into temp
-			offset += BLOCK_SIZE;
+			/*
+			 * Read a BLOCK and write to temp_reader
+			 * Jump BLOCK_SIZE over the data written to temp_reader
+			 * Reads all BLOCKS from start_block_id to stop_block_id
+			 * */
+			mydisk_read_block(i,temp_reader + jump_BLOCK_SIZE);
+			jump_BLOCK_SIZE += BLOCK_SIZE;
 		}
-		memcpy(buffer,&temp[start_address%BLOCK_SIZE],nbytes);
+
+		//Only write to buffer the data FROM start_address for nbytes
+		memcpy(buffer,&temp_reader[start_address%BLOCK_SIZE],nbytes);
 
 		//calculate latency
 		if(disk_type == 0){
@@ -178,31 +181,33 @@ int mydisk_write(int start_address, int nbytes, void *buffer)
 	 * modify the portion and then write the whole block back
 	 */
 
+	int amount_to_read,start_block_id, stop_block_id, jump_BLOCK_SIZE;
+
 	if(start_address >= 0 && nbytes >= 0 && (start_address + nbytes) < (max_blocks*BLOCK_SIZE)){
-		int start_block_id, stop_block_id;
 
 		start_block_id = start_address/BLOCK_SIZE;
 		stop_block_id = (start_address + nbytes)/BLOCK_SIZE;
 
 		char temp_reader[(stop_block_id-start_block_id+1) * BLOCK_SIZE];
 
-
-		int offset = 0;
+		jump_BLOCK_SIZE = 0;
 		int i;
 		for(i=start_block_id; i<= stop_block_id; i++){
-			mydisk_read_block(i,temp_reader + offset); //read block into temp
-			offset += BLOCK_SIZE;
+			mydisk_read_block(i,temp_reader + jump_BLOCK_SIZE);
+			jump_BLOCK_SIZE += BLOCK_SIZE;
 		}
 
 
-
+		//copy the buffer exactly into its spot in temp_reader for nbytes
 		memcpy(temp_reader + start_address%BLOCK_SIZE,buffer,nbytes);
 
-
-		offset = 0;
+		/*
+		 * Same as mydisk_read, but this time it is writing and then jumping BLOCK_SIZE
+		 * */
+		jump_BLOCK_SIZE = 0;
 		for(i=start_block_id; i<= stop_block_id; i++){
-			mydisk_write_block(i,temp_reader+offset); //write block into temp
-			offset += BLOCK_SIZE;
+			mydisk_write_block(i,temp_reader+jump_BLOCK_SIZE);
+			jump_BLOCK_SIZE += BLOCK_SIZE;
 		}
 
 		//calculate latency
