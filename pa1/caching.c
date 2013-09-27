@@ -26,7 +26,7 @@ int init_cache(int nblocks)
 	//use circular array showed in class
 	cache_entry *current;
 	cache_entry *tail;
-	//CACHE_BLOCKS = cache_size_in_blocks;
+
 	if (nblocks == 0){
 		printf("\nNo Cache Blocks specified");
 		return -1;}
@@ -36,7 +36,7 @@ int init_cache(int nblocks)
 		current = malloc(sizeof(cache_entry));
 		current -> block_id = -1;
 		current -> is_dirty = 0;
-		//current->content = malloc(sizeof(char)*BLOCK_SIZE);
+
 		//Implementing a circular queue for the Cache
 		if(i==0){
 			HeadCacheBlock = current;
@@ -50,7 +50,7 @@ int init_cache(int nblocks)
 	//Joining the ends of the queue together
 	if (nblocks != 0)
 		tail->next = HeadCacheBlock;
-	//printf("\nCache successfully initialized");
+
 	return 0;
 }
 
@@ -95,7 +95,7 @@ void *get_cached_block(int block_id)
 	int i;
 	for(i = 0;i<cache_blocks;i++){
 		if (current->block_id==block_id) {
-			return current;
+			return current->content;
 		}
 		current =  current->next;
 	}
@@ -122,8 +122,7 @@ void *create_cached_block(int block_id)
 	// Modify the current block
 	current->block_id = block_id;
 	current->is_dirty=0;
-	// Have to modify contents?? verify
-	// next block is already set from init
+
 	counter ++;
 	return current;
 }
