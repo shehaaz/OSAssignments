@@ -14,7 +14,7 @@ typedef struct cache_entry
 
 int cache_blocks;  /* number of blocks for the cache buffer */
 cache_entry *HeadCacheBlock;
-int counter =0;
+int counter = 0;
 
 /* TODO: some helper functions e.g. find_cached_entry(block_id) */
 
