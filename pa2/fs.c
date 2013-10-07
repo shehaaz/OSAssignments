@@ -155,6 +155,11 @@ int sfs_mkfs()
 sfs_superblock_t *sfs_print_info()
 {
 	/* TODO: load the superblock from disk and print*/
+
+	/*Argument 1: Pass the address of superblock "sb" as buffer to store the data fetched
+	  Argument 2: The superblock in at index 0*/
+	sfs_read_block(&sb,0);
+
 	return &sb;
 }
 

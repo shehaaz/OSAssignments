@@ -8,6 +8,7 @@ int max_blocks;    /* max number of blocks given at initialization */
 int disk_type;     /* disk type, 0 for HDD and 1 for SSD */
 int cache_enabled = 1; /* is cache enabled? 0 no, 1 yes */
 int Disk_Latency = 0;
+void *cache_buffer;
 
 
 //store the cache_block in a limited size queue. fetching using the block_id
@@ -66,9 +67,10 @@ int mydisk_read_block(int block_id, void *buffer)
 			if (get_cached_block(block_id) != NULL){
 				buffer = get_cached_block(block_id);
 			}else{
-				create_cached_block(block_id);
 				fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
 				fread(buffer,1,BLOCK_SIZE,thefile);
+				fread(cache_buffer,1,BLOCK_SIZE,thefile);
+				create_cached_block(block_id);
 			}
 			return 0;
 		} else {
@@ -98,12 +100,17 @@ int mydisk_write_block(int block_id, void *buffer)
 			 * 3. fill the requested buffer with the data in the entry
 			 * 4. return proper return code
 			 */
+			printf("inside write block");
 			if (get_cached_block(block_id) != NULL){
+				printf("cache hit");
+				fwrite(buffer,1,BLOCK_SIZE,cache_buffer);
 				mark_dirty(block_id);
 			}else{
-				create_cached_block(block_id);
+				printf("cache miss");
 				fseek(thefile,block_id*BLOCK_SIZE,SEEK_SET);
 				fwrite(buffer,1,BLOCK_SIZE,thefile);
+				fwrite(buffer,1,BLOCK_SIZE,cache_buffer);
+				create_cached_block(block_id);
 			}
 			return 0;
 		} else {
