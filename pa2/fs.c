@@ -230,43 +230,60 @@ int sfs_mkdir(char *dirname)
 	/* TODO: test if the dir exists */
 	/* TODO: insert a new dir to the linked list */
 
-	sfs_dirblock_t dir;
-	blkid dir_bid;
+	sfs_dirblock_t new_dir;
+	blkid first_bid, new_dir_bid;
 
-	int find_result = sfs_find_dir(dirname);
+	/*
+	Didn't find the directory. 
+	Create and add new directory to linked list 
+	*/
+	if(sfs_find_dir(dirname) == 0){
 
-	if(find_result == 0){
+		//read the super_block (sb)
 		sfs_read_block((char *) &sb,0);
-		dir_bid = sb.first_dir;
-		if(dir_bid == 0){
-			//make the directory
-			dir_bid = sfs_alloc_block();
-			sb.first_dir = dir_bid;
 
-			strcpy(dir.dir_name,dirname);
-			dir.next_dir = 0;
-			sfs_write_block(&dir,dir_bid);
+		//get the blkid of the first_dir from sb
+		first_bid = sb.first_dir;
 
-			return 0;
-		}else{
-			//loop through the file system
-			sfs_dirblock_t  *temp_dir;
-			while(dir_bid != 0){
-				sfs_read_block((sfs_dirblock_t *) temp_dir,dir_bid);
-				dir_bid = temp_dir->next_dir;
-			}
-
-			dir_bid = sfs_alloc_block();
-			temp_dir->next_dir = dir_bid;
-
-			strcpy(dir.dir_name,dirname);
-			dir.next_dir = 0;
-			sfs_write_block(&dir,dir_bid);
-
-			return 0;
+		/*
+		Find the directory that points to blkid==0
+		That directory will be temp_dir
+		*/
+		sfs_dirblock_t temp_dir;
+		blkid check_bid = first_bid;
+		blkid temp_bid;
+		while(check_bid != 0){
+			temp_bid = check_bid;
+			sfs_read_block(&temp_dir,check_bid);
+			check_bid = temp_dir->next_dir;
 		}
-	}
 
+		//allocated a block and get a blkid for the new directory		
+		new_dir_bid = sfs_alloc_block();
+		//set new directory name
+		strcpy(new_dir.dir_name,dirname);
+		//set next directory to zero for the new directory
+		new_dir.next_dir = 0;
+		//write new directory to HD at new_dir_bid
+		sfs_write_block(&new_dir,new_dir_bid);
+
+
+		//check if sb.first_dir was Zero
+		if(first_bid == 0){
+			//Change sb's first directory bid
+			sb.first_bid = new_dir_bid;
+			//write sb to HD
+			sfs_write_block(&sb,0);
+		}else{
+			//change next_dir of last directory to new_dir_bid
+			temp_dir->next_dir = new_dir_bid;
+			//write modified last directory to HD
+			sfs_write_block(&temp_dir,temp_bid);
+		}
+		
+		return 0;
+	}
+	//If the directory already exists return -1
 	return -1;
 }
 
