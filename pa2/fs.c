@@ -15,6 +15,7 @@ static u32 *freemap;
 /* file descriptor table */
 static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 
+
 /* 
  * Flush the in-memory freemap to disk 
  */
@@ -33,12 +34,41 @@ static blkid sfs_alloc_block()
 {
 	u32 size = sb.nfreemap_blocks * BLOCK_SIZE / sizeof(u32);	
 	u32 i, j;
+	int freemap_bit,offset,block_id;
 	/* TODO: find a freemap entry that has a free block */
-	
+
 	/* TODO: find out which bit in the entry is zero,
 	   set the bit, flush and return the bid
-	*/
-	return 0;
+	 */
+	for(freemap_bit=0;freemap_bit<size;freemap_bit++){
+		if(freemap[freemap_bit] != 0x11111111){
+			/*
+			break when freemap doesn't contain all 1's.
+			Therefore, it must contain a zero.
+			*/
+			break; 
+		}
+	}  
+
+	for(i=0;i<32;i++){
+		if((freemap[freemap_bit] & (0x00000001 << j)) == 0x00000000){
+			/*
+			Iterate through the freemap and stop when a zero bit is found
+			*/
+			offset = i;
+			break;
+		}
+	}
+
+	//Calculate the block_id  considering the offset
+	block_id = (freemap_bit*SFS_NBITS_IN_FREEMAP_ENTRY) + offset;
+
+	//set the freemap_bit in the freemap
+	freemap[freemap_bit] = (freemap[freemap_bit] | (0x00000001 << offset));
+	//flush the new freemap to the HD
+	sfs_flush_freemap();
+
+	return block_id;
 }
 
 /*
@@ -72,12 +102,12 @@ static void sfs_resize_file(int fd, u32 new_size)
 	sfs_inode_frame_t frame;
 
 	/* TODO: check if new frames are required */
-	
+
 	/* TODO: allocate a full frame */
 
 	/* TODO: add the new frame to the inode frame list
 	   Note that if the inode is changed, you need to write it to the disk
-	*/
+	 */
 }
 
 /*
@@ -99,7 +129,7 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 
 	/* TODO: find blocks between start and end.
 	   Transverse the frame list if needed
-	*/
+	 */
 	return 0;
 }
 
@@ -113,6 +143,19 @@ static blkid sfs_find_dir(char *dirname)
 	blkid dir_bid = 0;
 	sfs_dirblock_t dir;
 	/* TODO: start from the sb.first_dir, treverse the linked list */
+
+	dir_bid = sb.first_dir;
+	sfs_read_block(&dir,dir_bid);
+
+	while(dir.next_dir != 0){
+		if(strcmp(dir.dir_name,dirname) == 0){
+			return dir_bid;
+		}else{
+			dir_bid = dir.next_dir;
+			sfs_read_block(&dir,dir_bid);
+		}
+	}
+
 	return 0;
 }
 
@@ -157,7 +200,7 @@ sfs_superblock_t *sfs_print_info()
 	/* TODO: load the superblock from disk and print*/
 
 	/*Argument 1: Pass the address of superblock "sb" as buffer to store the data fetched
-	  Argument 2: The superblock in at index 0*/
+	  Argument 2: The superblock is at index 0*/
 	sfs_read_block(&sb,0);
 
 	return &sb;
@@ -171,7 +214,45 @@ int sfs_mkdir(char *dirname)
 {
 	/* TODO: test if the dir exists */
 	/* TODO: insert a new dir to the linked list */
-	return 0;
+
+	sfs_dirblock_t dir;
+	blkid dir_bid;
+
+	int find_result = sfs_find_dir(dirname);
+
+	if(find_result == 0){
+		sfs_read_block((char *) &sb,0);
+		dir_bid = sb.first_dir;
+		if(dir_bid == 0){
+			//make the directory
+			dir_bid = sfs_alloc_block();
+			sb.first_dir = dir_bid;
+
+			strcpy(dir.dir_name,dirname);
+			dir.next_dir = 0;
+			sfs_write_block(&dir,dir_bid);
+
+			return 0;
+		}else{
+			//loop through the file system
+			sfs_dirblock_t  *temp_dir;
+			while(dir_bid != 0){
+				sfs_read_block((sfs_dirblock_t *) temp_dir,dir_bid);
+				dir_bid = temp_dir->next_dir;
+			}
+
+			dir_bid = sfs_alloc_block();
+			temp_dir->next_dir = dir_bid;
+
+			strcpy(dir.dir_name,dirname);
+			dir.next_dir = 0;
+			sfs_write_block(&dir,dir_bid);
+
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 /*
@@ -208,12 +289,12 @@ int sfs_open(char *dirname, char *name)
 	int i;
 
 	/* TODO: find a free fd number */
-	
+
 	/* TODO: find the dir first */
 
 	/* TODO: traverse the inodes to see if the file exists.
 	   If it exists, load its inode. Otherwise, create a new file.
-	*/
+	 */
 
 	/* TODO: create a new file */
 	return fd;
@@ -274,16 +355,16 @@ int sfs_write(int fd, void *buf, int length)
 	u32 cur = fdtable[fd].cur;
 
 	/* TODO: check if we need to resize */
-	
+
 	/* TODO: get the block ids of all contents (using sfs_get_file_content() */
 
 	/* TODO: main loop, go through every block, copy the necessary parts
 	   to the buffer, consult the hint in the document. Do not forget to 
 	   flush to the disk.
-	*/
+	 */
 	/* TODO: update the cursor and free the temp buffer
 	   for sfs_get_file_content()
-	*/
+	 */
 	return 0;
 }
 

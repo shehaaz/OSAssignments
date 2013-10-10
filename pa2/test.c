@@ -38,7 +38,6 @@ static int testcase1(void)
 	sfs_superblock_t *p;
 	int result = sfs_mkfs();
 	p = sfs_print_info();
-	printf("nblocks: %d\nnfreemap_blocks: %d\n",p->nblocks,p->nfreemap_blocks);
 	return !(p->nblocks == 1024 && p->nfreemap_blocks == 1);
 }
 
