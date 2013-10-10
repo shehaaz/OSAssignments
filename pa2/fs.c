@@ -27,7 +27,7 @@ static void sfs_flush_freemap()
 	/* TODO: write freemap block one by one */
 
 	//write freemap to Block_ID 1 on HD
-	sfs_write_block(&freemap,1)
+	sfs_write_block(&freemap,bid)
 }
 
 /* 
@@ -82,7 +82,19 @@ static void sfs_free_block(blkid bid)
 	/* TODO find the entry and bit that correspond to the block */
 	int entry_loc;
 	int bit_loc;
+
+	//Find freemap entry
+	entry_loc = bid/SFS_NBITS_IN_FREEMAP_ENTRY;
+	//Find the bit that corresponds to the block
+	bit_loc = bid % SFS_NBITS_IN_FREEMAP_ENTRY;
+
 	/* TODO unset the bit and flush the freemap */
+
+	//Unset bit
+	freemap[entry_loc] = (freemap[entry_loc] & ~(0x00000001 << bit_loc));
+
+	//flush freemap to HD
+	sfs_flush_freemap();
 }
 
 /* 
