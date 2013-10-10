@@ -27,7 +27,7 @@ static void sfs_flush_freemap()
 	/* TODO: write freemap block one by one */
 
 	//write freemap to Block_ID 1 on HD
-	sfs_write_block(&freemap,bid)
+	sfs_write_block(&freemap,bid);
 }
 
 /* 
@@ -36,28 +36,31 @@ static void sfs_flush_freemap()
 static blkid sfs_alloc_block()
 {
 	u32 size = sb.nfreemap_blocks * BLOCK_SIZE / sizeof(u32);	
-	u32 i, j;
+	u32 i;
 	int freemap_bit,offset,block_id;
 	/* TODO: find a freemap entry that has a free block */
 
 	/* TODO: find out which bit in the entry is zero,
 	   set the bit, flush and return the bid
 	 */
+
 	for(freemap_bit=0;freemap_bit<size;freemap_bit++){
-		if(freemap[freemap_bit] != 0x11111111){
+		u32 temp = freemap[freemap_bit];
+		if(temp != 0xFFFFFFFF){
 			/*
 			break when freemap doesn't contain all 1's.
 			Therefore, it must contain a zero.
-			*/
+			 */
 			break; 
 		}
 	}  
 
 	for(i=0;i<32;i++){
-		if((freemap[freemap_bit] & (0x00000001 << j)) == 0x00000000){
+		u32 temp = (freemap[freemap_bit] & (0x00000001 << i));
+		if(temp == 0x00000000){
 			/*
 			Iterate through the freemap and stop when a zero bit is found
-			*/
+			 */
 			offset = i;
 			break;
 		}
@@ -155,20 +158,22 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
  */
 static blkid sfs_find_dir(char *dirname)
 {
-	blkid dir_bid = 0;
+	blkid curr_bid = 0;
 	sfs_dirblock_t dir;
 	/* TODO: start from the sb.first_dir, treverse the linked list */
 
-	dir_bid = sb.first_dir;
-	sfs_read_block(&dir,dir_bid);
+	curr_bid = sb.first_dir;
 
-	while(dir.next_dir != 0){
+
+	while(curr_bid != 0){
+
+		sfs_read_block(&dir,curr_bid);
+
 		if(strcmp(dir.dir_name,dirname) == 0){
-			return dir_bid;
-		}else{
-			dir_bid = dir.next_dir;
-			sfs_read_block(&dir,dir_bid);
+			return curr_bid;
 		}
+		curr_bid = dir.next_dir;
+		sfs_read_block(&dir,curr_bid);
 	}
 
 	return 0;
@@ -236,7 +241,7 @@ int sfs_mkdir(char *dirname)
 	/*
 	Didn't find the directory. 
 	Create and add new directory to linked list 
-	*/
+	 */
 	if(sfs_find_dir(dirname) == 0){
 
 		//read the super_block (sb)
@@ -248,14 +253,14 @@ int sfs_mkdir(char *dirname)
 		/*
 		Find the directory that points to blkid==0
 		That directory will be temp_dir
-		*/
+		 */
 		sfs_dirblock_t temp_dir;
 		blkid check_bid = first_bid;
 		blkid temp_bid;
 		while(check_bid != 0){
 			temp_bid = check_bid;
 			sfs_read_block(&temp_dir,check_bid);
-			check_bid = temp_dir->next_dir;
+			check_bid = temp_dir.next_dir;
 		}
 
 		//allocated a block and get a blkid for the new directory		
@@ -271,16 +276,16 @@ int sfs_mkdir(char *dirname)
 		//check if sb.first_dir was Zero
 		if(first_bid == 0){
 			//Change sb's first directory bid
-			sb.first_bid = new_dir_bid;
+			sb.first_dir = new_dir_bid;
 			//write sb to HD
 			sfs_write_block(&sb,0);
 		}else{
 			//change next_dir of last directory to new_dir_bid
-			temp_dir->next_dir = new_dir_bid;
+			temp_dir.next_dir = new_dir_bid;
 			//write modified last directory to HD
 			sfs_write_block(&temp_dir,temp_bid);
 		}
-		
+
 		return 0;
 	}
 	//If the directory already exists return -1
@@ -304,8 +309,19 @@ int sfs_rmdir(char *dirname)
  */
 int sfs_lsdir()
 {
-	/* TODO: go thru the linked list */
-	return 0;
+	sfs_dirblock_t temp_dir;
+	blkid check_bid;
+	check_bid = sb.first_dir;
+	int counter = 0;
+
+	/* go thru the linked list */
+	while(check_bid != 0){
+		sfs_read_block(&temp_dir,check_bid);
+		check_bid = temp_dir.next_dir;
+		counter++;
+	}
+
+	return counter;
 }
 
 /*
