@@ -25,6 +25,9 @@ static void sfs_flush_freemap()
 	blkid bid = 1;
 	char *p = (char *)freemap;
 	/* TODO: write freemap block one by one */
+
+	//write freemap to Block_ID 1 on HD
+	sfs_write_block(&freemap,1)
 }
 
 /* 
