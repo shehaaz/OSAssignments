@@ -244,47 +244,24 @@ int sfs_mkdir(char *dirname)
 	 */
 	if(sfs_find_dir(dirname) == 0){
 
-		//read the super_block (sb)
-		sfs_read_block((char *) &sb,0);
-
-		//get the blkid of the first_dir from sb
-		first_bid = sb.first_dir;
-
-		/*
-		Find the directory that points to blkid==0
-		That directory will be temp_dir
-		 */
-		sfs_dirblock_t temp_dir;
-		blkid check_bid = first_bid;
-		blkid temp_bid;
-		while(check_bid != 0){
-			temp_bid = check_bid;
-			sfs_read_block(&temp_dir,check_bid);
-			check_bid = temp_dir.next_dir;
-		}
-
-		//allocated a block and get a blkid for the new directory		
+		//allocated a block and get a blkid for the new directory
 		new_dir_bid = sfs_alloc_block();
 		//set new directory name
 		strcpy(new_dir.dir_name,dirname);
-		//set next directory to zero for the new directory
-		new_dir.next_dir = 0;
+		//Make the first inode have blkid zero to show that it is a new Directory
+		new_dir.inodes[0] = 0;
+
+		/* Using the append new directory in front of Linked List technique */
+		//Make new_dir point to first dir
+		new_dir.next_dir = sb.first_dir;
+		//make sb point to new_dir
+		sb.first_dir = new_dir_bid;
+
+		//write sb to HD
+		sfs_write_block(&sb,0);
+
 		//write new directory to HD at new_dir_bid
 		sfs_write_block(&new_dir,new_dir_bid);
-
-
-		//check if sb.first_dir was Zero
-		if(first_bid == 0){
-			//Change sb's first directory bid
-			sb.first_dir = new_dir_bid;
-			//write sb to HD
-			sfs_write_block(&sb,0);
-		}else{
-			//change next_dir of last directory to new_dir_bid
-			temp_dir.next_dir = new_dir_bid;
-			//write modified last directory to HD
-			sfs_write_block(&temp_dir,temp_bid);
-		}
 
 		return 0;
 	}
@@ -301,7 +278,44 @@ int sfs_rmdir(char *dirname)
 	/* TODO: check if the dir exists */
 	/* TODO: check if no files */
 	/* TODO: go thru the linked list and delete the dir*/
-	return 0;
+
+	if(sfs_find_dir(dirname) != 0){
+
+		blkid curr_bid = 0;
+		blkid prev_bid = 0;
+		sfs_dirblock_t curr_dir, prev_dir;
+
+		curr_bid = sb.first_dir;
+
+		while(curr_bid != 0){
+
+			sfs_read_block(&curr_dir,curr_bid);
+
+			blkid first_inode_blkid = curr_dir.inodes[0];
+
+			if((strcmp(curr_dir.dir_name,dirname) == 0) && (first_inode_blkid == 0)){
+
+				//Case: Removing first Directory. Modify sb
+				if(curr_bid == sb.first_dir){
+					sb.first_dir = curr_dir.next_dir;
+					sfs_write_block(&sb,0);
+					sfs_free_block(curr_bid);
+					return 0;
+				}else{ //Case: Any other Directory
+					prev_dir.next_dir = curr_dir.next_dir;
+					sfs_write_block(&prev_dir,prev_bid);
+					sfs_free_block(curr_bid);
+					return 0;
+				}
+			}
+			//Save Previous Directory Information
+			prev_bid = curr_bid;
+			prev_dir = curr_dir;
+			//Set Next Directory
+			curr_bid = curr_dir.next_dir;
+		}
+	}
+	return -1;
 }
 
 /*

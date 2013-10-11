@@ -48,20 +48,20 @@ static int testcase2(void)
 	sfs_mkdir("haha");
 	if (sfs_lsdir() != 2)
 		return 1;
-//	sfs_mkdir("wawa");
-//	printf("--------------\n");
-//	if (sfs_lsdir() != 3)
-//		return 1;
-//	sfs_rmdir("haha");
-//	printf("--------------\n");
-//	if (sfs_lsdir() != 2)
-//		return 1;
-//	sfs_rmdir("wawa");
-//	sfs_rmdir("root");
-//	printf("--------------\n");
-//	if (sfs_lsdir() != 0)
-//		return 1;
-//	sfs_mkdir("root");
+	sfs_mkdir("wawa");
+	printf("--------------\n");
+	if (sfs_lsdir() != 3)
+		return 1;
+	sfs_rmdir("haha");
+	printf("--------------\n");
+	if (sfs_lsdir() != 2)
+		return 1;
+	sfs_rmdir("wawa");
+	sfs_rmdir("root");
+	printf("--------------\n");
+	if (sfs_lsdir() != 0)
+		return 1;
+	sfs_mkdir("root");
 	return 0;
 }
 
