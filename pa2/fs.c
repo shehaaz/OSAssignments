@@ -19,34 +19,34 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 /* 
  * Flush the in-memory freemap to disk 
  */
- static void sfs_flush_freemap()
- {
- 	size_t i;
- 	blkid bid = 1;
- 	char *p = (char *)freemap;
+static void sfs_flush_freemap()
+{
+	size_t i;
+	blkid bid = 1;
+	char *p = (char *)freemap;
 	/* TODO: write freemap block one by one */
 
 	//write freemap to Block_ID 1 on HD
- 	sfs_write_block(&freemap,bid);
- }
+	sfs_write_block(&freemap,bid);
+}
 
 /* 
  * Allocate a free block, mark it in the freemap and flush the freemap to disk
  */
- static blkid sfs_alloc_block()
- {
- 	u32 size = sb.nfreemap_blocks * BLOCK_SIZE / sizeof(u32);	
- 	u32 i;
- 	int freemap_bit,offset,block_id;
+static blkid sfs_alloc_block()
+{
+	u32 size = sb.nfreemap_blocks * BLOCK_SIZE / sizeof(u32);
+	u32 i;
+	int freemap_bit,offset,block_id;
 	/* TODO: find a freemap entry that has a free block */
 
 	/* TODO: find out which bit in the entry is zero,
 	   set the bit, flush and return the bid
 	 */
 
-	   for(freemap_bit=0;freemap_bit<size;freemap_bit++){
-	   	u32 temp = freemap[freemap_bit];
-	   	if(temp != 0xFFFFFFFF){
+	for(freemap_bit=0;freemap_bit<size;freemap_bit++){
+		u32 temp = freemap[freemap_bit];
+		if(temp != 0xFFFFFFFF){
 			/*
 			break when freemap doesn't contain all 1's.
 			Therefore, it must contain a zero.
@@ -80,44 +80,44 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 /*
  * Free a block, unmark it in the freemap and flush
  */
- static void sfs_free_block(blkid bid)
- {
+static void sfs_free_block(blkid bid)
+{
 	/* TODO find the entry and bit that correspond to the block */
- 	int entry_loc;
- 	int bit_loc;
+	int entry_loc;
+	int bit_loc;
 
 	//Find freemap entry
- 	entry_loc = bid/SFS_NBITS_IN_FREEMAP_ENTRY;
+	entry_loc = bid/SFS_NBITS_IN_FREEMAP_ENTRY;
 	//Find the bit that corresponds to the block
- 	bit_loc = bid % SFS_NBITS_IN_FREEMAP_ENTRY;
+	bit_loc = bid % SFS_NBITS_IN_FREEMAP_ENTRY;
 
 	/* TODO unset the bit and flush the freemap */
 
 	//Unset bit
- 	freemap[entry_loc] = (freemap[entry_loc] & ~(0x00000001 << bit_loc));
+	freemap[entry_loc] = (freemap[entry_loc] & ~(0x00000001 << bit_loc));
 
 	//flush freemap to HD
- 	sfs_flush_freemap();
- }
+	sfs_flush_freemap();
+}
 
 /* 
  * Resize a file.
  * This file should be opened (in the file descriptor table). The new size
  * should be larger than the old one (not supposed to shrink a file)
  */
- static void sfs_resize_file(int fd, u32 new_size)
- {
+static void sfs_resize_file(int fd, u32 new_size)
+{
 	/* the length of content that can be hold by a full frame (in bytes) */
- 	int frame_size = BLOCK_SIZE * SFS_FRAME_COUNT;
+	int frame_size = BLOCK_SIZE * SFS_FRAME_COUNT;
 	/* old file size */
- 	int old_size = fdtable[fd].inode.size;
+	int old_size = fdtable[fd].inode.size;
 	/* how many frames are used before resizing */
- 	int old_nframe = (old_size + frame_size -1) / frame_size;
+	int old_nframe = (old_size + frame_size -1) / frame_size;
 	/* how many frames are required after resizing */
- 	int new_nframe = (new_size + frame_size - 1) / frame_size;
- 	int i, j;
- 	blkid frame_bid = 0;
- 	sfs_inode_frame_t frame;
+	int new_nframe = (new_size + frame_size - 1) / frame_size;
+	int i, j;
+	blkid frame_bid = 0;
+	sfs_inode_frame_t frame;
 
 	/* TODO: check if new frames are required */
 
@@ -126,7 +126,7 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 	/* TODO: add the new frame to the inode frame list
 	   Note that if the inode is changed, you need to write it to the disk
 	 */
-	}
+}
 
 /*
  * Get the bids of content blocks that hold the file content starting from cur
@@ -136,48 +136,48 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  * 
  * This function returns the number of bids being stored to the array.
  */
- static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
- {
+static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
+{
 	/* the starting block of the content */
- 	u32 start;
+	u32 start;
 	/* the ending block of the content */
- 	u32 end;
- 	u32 i;
- 	sfs_inode_frame_t frame;
+	u32 end;
+	u32 i;
+	sfs_inode_frame_t frame;
 
 	/* TODO: find blocks between start and end.
 	   Transverse the frame list if needed
 	 */
-	   return 0;
-	}
+	return 0;
+}
 
 /*
  * Find the directory of the given name.
  *
  * Return block id for the directory or zero if not found
  */
- static blkid sfs_find_dir(char *dirname)
- {
- 	blkid curr_bid = 0;
- 	sfs_dirblock_t dir;
+static blkid sfs_find_dir(char *dirname)
+{
+	blkid curr_bid = 0;
+	sfs_dirblock_t dir;
 	/* TODO: start from the sb.first_dir, treverse the linked list */
 
- 	curr_bid = sb.first_dir;
+	curr_bid = sb.first_dir;
 
 
- 	while(curr_bid != 0){
+	while(curr_bid != 0){
 
- 		sfs_read_block(&dir,curr_bid);
+		sfs_read_block(&dir,curr_bid);
 
- 		if(strcmp(dir.dir_name,dirname) == 0){
- 			return curr_bid;
- 		}
- 		curr_bid = dir.next_dir;
- 		sfs_read_block(&dir,curr_bid);
- 	}
+		if(strcmp(dir.dir_name,dirname) == 0){
+			return curr_bid;
+		}
+		curr_bid = dir.next_dir;
+		sfs_read_block(&dir,curr_bid);
+	}
 
- 	return 0;
- }
+	return 0;
+}
 
 /*
  * Create a SFS with one superblock, one freemap block and 1022 data blocks
@@ -187,56 +187,56 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  *
  * This function always returns zero on success.
  */
- int sfs_mkfs()
- {
+int sfs_mkfs()
+{
 	/* one block in-memory space for freemap (avoid malloc) */
- 	static char freemap_space[BLOCK_SIZE];
- 	int i;
- 	sb.magic = SFS_MAGIC;
- 	sb.nblocks = 1024;
- 	sb.nfreemap_blocks = 1;
- 	sb.first_dir = 0;
- 	for (i = 0; i < SFS_MAX_OPENED_FILES; ++i) {
+	static char freemap_space[BLOCK_SIZE];
+	int i;
+	sb.magic = SFS_MAGIC;
+	sb.nblocks = 1024;
+	sb.nfreemap_blocks = 1;
+	sb.first_dir = 0;
+	for (i = 0; i < SFS_MAX_OPENED_FILES; ++i) {
 		/* no opened files */
- 		fdtable[i].valid = 0;
- 	}
- 	sfs_write_block(&sb, 0);
- 	freemap = (u32 *)freemap_space;
- 	memset(freemap, 0, BLOCK_SIZE);
+		fdtable[i].valid = 0;
+	}
+	sfs_write_block(&sb, 0);
+	freemap = (u32 *)freemap_space;
+	memset(freemap, 0, BLOCK_SIZE);
 	/* just to enlarge the whole file */
- 	sfs_write_block(freemap, sb.nblocks);
+	sfs_write_block(freemap, sb.nblocks);
 	/* initializing freemap */
 	freemap[0] = 0x3; /* 11b, freemap block and sb used*/
- 	sfs_write_block(freemap, 1);
- 	memset(&sb, 0, BLOCK_SIZE);
- 	return 0;
- }
+	sfs_write_block(freemap, 1);
+	memset(&sb, 0, BLOCK_SIZE);
+	return 0;
+}
 
 /*
  * Load the super block from disk and print the parameters inside
  */
- sfs_superblock_t *sfs_print_info()
- {
+sfs_superblock_t *sfs_print_info()
+{
 	/* TODO: load the superblock from disk and print*/
 
 	/*Argument 1: Pass the address of superblock "sb" as buffer to store the data fetched
 	  Argument 2: The superblock is at index 0*/
- 	sfs_read_block(&sb,0);
+	sfs_read_block(&sb,0);
 
- 	return &sb;
- }
+	return &sb;
+}
 
 /*
  * Create a new directory and return 0 on success.
  * If the dir already exists, return -1.
  */
- int sfs_mkdir(char *dirname)
- {
+int sfs_mkdir(char *dirname)
+{
 	/* TODO: test if the dir exists */
 	/* TODO: insert a new dir to the linked list */
 
- 	sfs_dirblock_t new_dir;
- 	blkid first_bid, new_dir_bid;
+	sfs_dirblock_t new_dir;
+	blkid first_bid, new_dir_bid;
 
 	/*
 	Didn't find the directory. 
@@ -248,6 +248,7 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 		new_dir_bid = sfs_alloc_block();
 		//set new directory name
 		strcpy(new_dir.dir_name,dirname);
+
 		//initialize the inodes to blkid zero
 		int i;
 		for (i = 0; i < SFS_DB_NINODES; ++i)
@@ -277,34 +278,34 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  * Remove an existing empty directory and return 0 on success.
  * If the dir does not exist or still contains files, return -1.
  */
- int sfs_rmdir(char *dirname)
- {
+int sfs_rmdir(char *dirname)
+{
 	/* TODO: check if the dir exists */
 	/* TODO: check if no files */
 	/* TODO: go thru the linked list and delete the dir*/
 
- 	if(sfs_find_dir(dirname) != 0){
+	if(sfs_find_dir(dirname) != 0){
 
- 		blkid curr_bid = 0;
- 		blkid prev_bid = 0;
- 		sfs_dirblock_t curr_dir, prev_dir;
+		blkid curr_bid = 0;
+		blkid prev_bid = 0;
+		sfs_dirblock_t curr_dir, prev_dir;
 
- 		curr_bid = sb.first_dir;
+		curr_bid = sb.first_dir;
 
- 		while(curr_bid != 0){
+		while(curr_bid != 0){
 
- 			sfs_read_block(&curr_dir,curr_bid);
+			sfs_read_block(&curr_dir,curr_bid);
 
- 			blkid first_inode_blkid = curr_dir.inodes[0];
+			blkid first_inode_blkid = curr_dir.inodes[0];
 
- 			if((strcmp(curr_dir.dir_name,dirname) == 0) && (first_inode_blkid == 0)){
+			if((strcmp(curr_dir.dir_name,dirname) == 0) && (first_inode_blkid == 0)){
 
 				//Case: Removing first Directory. Modify sb
- 				if(curr_bid == sb.first_dir){
- 					sb.first_dir = curr_dir.next_dir;
- 					sfs_write_block(&sb,0);
- 					sfs_free_block(curr_bid);
- 					return 0;
+				if(curr_bid == sb.first_dir){
+					sb.first_dir = curr_dir.next_dir;
+					sfs_write_block(&sb,0);
+					sfs_free_block(curr_bid);
+					return 0;
 				}else{ //Case: Any other Directory
 					prev_dir.next_dir = curr_dir.next_dir;
 					sfs_write_block(&prev_dir,prev_bid);
@@ -325,159 +326,180 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 /*
  * Print all directories. Return the number of directories.
  */
- int sfs_lsdir()
- {
- 	sfs_dirblock_t temp_dir;
- 	blkid check_bid;
- 	check_bid = sb.first_dir;
- 	int counter = 0;
+int sfs_lsdir()
+{
+	sfs_dirblock_t temp_dir;
+	blkid check_bid;
+	check_bid = sb.first_dir;
+	int counter = 0;
 
 	/* go thru the linked list */
- 	while(check_bid != 0){
- 		sfs_read_block(&temp_dir,check_bid);
- 		check_bid = temp_dir.next_dir;
- 		counter++;
- 	}
+	while(check_bid != 0){
+		sfs_read_block(&temp_dir,check_bid);
+		check_bid = temp_dir.next_dir;
+		counter++;
+	}
 
- 	return counter;
- }
+	return counter;
+}
 
 /*
  * Open a file. If it does not exist, create a new one.
  * Allocate a file desriptor for the opened file and return the fd.
  */
- int sfs_open(char *dirname, char *name)
- {
- 	blkid dir_bid = 0, inode_bid = 0, frame_bid = 0;
- 	sfs_inode_t inode;
- 	sfs_dirblock_t dir;
- 	int free_fd_index, i, file_exists, free_inode_index;
+int sfs_open(char *dirname, char *name)
+{
+	blkid dir_bid = 0, inode_bid = 0, frame_bid = 0;
+	sfs_inode_t inode;
+	sfs_dirblock_t dir;
+	int free_fd_index, i, file_exists, free_inode_index;
 
 
- 	if(strlen(name) > SFS_MAX_FILENAME_LEN){
-	   	//not sure what to return
- 		return -1; 
- 	}
- 	else{
-	/* find a free fd number */
-
- 		free_fd_index = 0;
- 		while (fdtable[free_fd_index].valid != 0) {
- 			free_fd_index = free_fd_index++;
- 		}
-
-	/* find the dir first */
- 	int mkdir_result = sfs_mkdir(dirname); //mkdir if it doesn't exist
- 	dir_bid = sfs_find_dir(dirname); //get the blkid
- 	sfs_read_block(&dir,dir_bid); //read content of the dir from HD
-
-	/* traverse the inodes to see if the file exists.
-	   If it exists, load its inode. Otherwise, create a new file.
-	 */
-
-	file_exists = 0;  
-	free_inode_index = 0;
-	//IF file already exists
-	if(mkdir_result == -1){   
-	   for (i = 0; i < SFS_DB_NINODES; ++i)
-	   {
-	   	if(dir.inodes[i] != 0){
-	   		inode_bid = dir.inodes[i];
-	   		sfs_read_block(&inode,inode_bid);
-	   		if(strcmp(inode.file_name,name) == 0){
-	   			file_exists = 1;
-	   			break;
-	   		}
-	   	}else{
-	   		free_inode_index = i;
-	   	}
-	   }  
+	if(strlen(name) > SFS_MAX_FILENAME_LEN){
+		//not sure what to return
+		return -1;
 	}
+	else{
+		/* find a free fd number */
 
-	/* case: file DNE or a new Directory */
-	if(file_exists == 0){
-	   	
-	   	sfs_inode_t new_inode;
-	   	sfs_inode_frame_t new_frame;
-	   	
-	   	inode_bid = sfs_alloc_block();
-	   	frame_bid = sfs_alloc_block();
+		free_fd_index = 0;
+		while (fdtable[free_fd_index].valid != 0) {
+			free_fd_index = free_fd_index++;
+		}
 
-	   	//Setup the new Inode
-	   	new_inode.first_frame = frame_bid;
-	   	new_inode.size = 0;
-	   	strcpy(new_inode.file_name,name);
+		/* find the dir first */
+		int mkdir_result;
+		mkdir_result = sfs_mkdir(dirname); //mkdir if it doesn't exist
+		dir_bid = sfs_find_dir(dirname); //get the blkid
+		sfs_read_block(&dir,dir_bid); //read content of the dir from HD
 
-	   	//Update the "open" fdtable
-	   	fdtable[free_fd_index].inode = new_inode;
-	   	fdtable[free_fd_index].inode_bid = inode_bid;
-	   	fdtable[free_fd_index].valid = 1;
-	   	fdtable[free_fd_index].cur = 0;
+		/* traverse the inodes to see if the file exists.
+	   If it exists, load its inode. Otherwise, create a new file.
+		 */
 
-	   	//Initialize a fresh frame. set next and content to zero
-	   	new_frame.next = 0;
-	   	for (i = 0; j < SFS_FRAME_COUNT; i++) {
-        	//setting content block_ids to zero
-	   		new_frame.content[i] = 0;
-	   	}
-	   	
-	   	//update directory and write to HD
-	   	dir.inodes[free_inode_index] = inode_bid;
-	   	sfs_write_block(&dir,dir_bid);
+		file_exists = 0;
+		free_inode_index = 0;
+		//IF file already exists
+		if(mkdir_result == -1){
+			for (i = 0; i < SFS_DB_NINODES; ++i)
+			{
+				if(dir.inodes[i] != 0){
+					inode_bid = dir.inodes[i];
+					sfs_read_block(&inode,inode_bid);
+					if(strcmp(inode.file_name,name) == 0){
+						file_exists = 1;
+						break;
+					}
+				}else{
+					free_inode_index = i;
+				}
+			}
+		}
 
-	   	//write new node and frame to HD
-	   	sfs_write_block(&new_inode,inode_bid);
-	   	sfs_write_block(&new_frame,frame_bid);
+		/* case: file DNE or a new Directory */
+		if(file_exists == 0){
+
+			sfs_inode_t new_inode;
+			sfs_inode_frame_t new_frame;
+
+			inode_bid = sfs_alloc_block();
+			frame_bid = sfs_alloc_block();
+
+			//Setup the new Inode
+			new_inode.first_frame = frame_bid;
+			new_inode.size = 0;
+			strcpy(new_inode.file_name,name);
+
+			//Update the "open" fdtable
+			fdtable[free_fd_index].inode = new_inode;
+			fdtable[free_fd_index].inode_bid = inode_bid;
+			fdtable[free_fd_index].valid = 1;
+			fdtable[free_fd_index].cur = 0;
+
+			//Initialize a fresh frame. set next and content to zero
+			new_frame.next = 0;
+			for (i = 0; i < SFS_FRAME_COUNT; i++) {
+				//setting content block_ids to zero
+				new_frame.content[i] = 0;
+			}
+
+			//update directory and write to HD
+			dir.inodes[free_inode_index] = inode_bid;
+			sfs_write_block(&dir,dir_bid);
+
+			//write new node and frame to HD
+			sfs_write_block(&new_inode,inode_bid);
+			sfs_write_block(&new_frame,frame_bid);
 
 
-	   }else{
-		   	//Update the "open" fdtable
-		   	fdtable[free_fd_index].inode = inode;
-		   	fdtable[free_fd_index].inode_bid = inode_bid;
-		   	fdtable[free_fd_index].valid = 1;
-		   	fdtable[free_fd_index].cur = 0;
-	   }
+		}else{
+			//Update the "open" fdtable
+			fdtable[free_fd_index].inode = inode;
+			fdtable[free_fd_index].inode_bid = inode_bid;
+			fdtable[free_fd_index].valid = 1;
+			fdtable[free_fd_index].cur = 0;
+		}
 
-	   return free_fd_index;
+		return free_fd_index;
 	}
 }
 
 /*
  * Close a file. Just mark the valid field to be zero.
  */
- int sfs_close(int fd)
- {
-	/* TODO: mark the valid field */
- 	return 0;
- }
+int sfs_close(int fd)
+{
+	/*mark the valid field */
+	fdtable[fd].valid = 0;
+	return 0;
+}
 
 /*
  * Remove/delete an existing file
  *
  * This function returns zero on success.
  */
- int sfs_remove(int fd)
- {
- 	blkid frame_bid;
- 	sfs_dirblock_t dir;
- 	int i;
+int sfs_remove(int fd)
+{
+	blkid frame_bid;
+	sfs_dirblock_t dir;
+	int i;
 
 	/* TODO: update dir */
 
 	/* TODO: free inode and all its frames */
 
 	/* TODO: close the file */
- 	return 0;
- }
+	return 0;
+}
 
 /*
  * List all the files in all directories. Return the number of files.
  */
- int sfs_ls()
- {
-	/* TODO: nested loop: traverse all dirs and all containing files*/
- 	return 0;
- }
+int sfs_ls()
+{
+	blkid currid;
+	sfs_dirblock_t dir;
+	int count = 0;
+
+	/*nested loop: traverse all dirs and all containing files*/
+
+	currid = sb.first_dir;
+
+	while(currid != 0){
+		sfs_read_block(&dir,currid);
+		int i;
+		for (i = 0; i < SFS_DB_NINODES; ++i)
+		{
+			if(dir.inodes[i] != 0){
+				count++;
+			}
+		}
+		currid = dir.next_dir;
+	}
+
+	return count;;
+}
 
 /*
  * Write to a file. This function can potentially enlarge the file if the 
@@ -487,14 +509,14 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  * 
  * This function returns number of bytes written.
  */
- int sfs_write(int fd, void *buf, int length)
- {
- 	int remaining, offset, to_copy;
- 	blkid *bids;
- 	int i, n;
- 	char *p = (char *)buf;
- 	char tmp[BLOCK_SIZE];
- 	u32 cur = fdtable[fd].cur;
+int sfs_write(int fd, void *buf, int length)
+{
+	int remaining, offset, to_copy;
+	blkid *bids;
+	int i, n;
+	char *p = (char *)buf;
+	char tmp[BLOCK_SIZE];
+	u32 cur = fdtable[fd].cur;
 
 	/* TODO: check if we need to resize */
 
@@ -507,8 +529,8 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
 	/* TODO: update the cursor and free the temp buffer
 	   for sfs_get_file_content()
 	 */
-	   	return 0;
-	}
+	return 0;
+}
 
 /*
  * Read from an opend file. 
@@ -517,19 +539,19 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  *
  * This function returns the number of bytes read.
  */
- int sfs_read(int fd, void *buf, int length)
- {
- 	int remaining, to_copy, offset;
- 	blkid *bids;
- 	int i, n;
- 	char *p = (char *)buf;
- 	char tmp[BLOCK_SIZE];
- 	u32 cur = fdtable[fd].cur;
+int sfs_read(int fd, void *buf, int length)
+{
+	int remaining, to_copy, offset;
+	blkid *bids;
+	int i, n;
+	char *p = (char *)buf;
+	char tmp[BLOCK_SIZE];
+	u32 cur = fdtable[fd].cur;
 
 	/* TODO: check if we need to truncate */
 	/* TODO: similar to the sfs_write() */
- 	return 0;
- }
+	return 0;
+}
 
 /* 
  * Seek inside the file.
@@ -541,19 +563,19 @@ static fd_struct_t fdtable[SFS_MAX_OPENED_FILES];
  * 
  * This function returns 0 on success.
  */
- int sfs_seek(int fd, int relative, int loc)
- {
+int sfs_seek(int fd, int relative, int loc)
+{
 	/* TODO: get the old cursor, change it as specified by the parameters */
- 	return 0;
- }
+	return 0;
+}
 
 /*
  * Check if we reach the EOF(end-of-file).
  * 
  * This function returns 1 if it is EOF, otherwise 0.
  */
- int sfs_eof(int fd)
- {
+int sfs_eof(int fd)
+{
 	/* TODO: check if the cursor has gone out of bound */
- 	return 0;
- }
+	return 0;
+}
