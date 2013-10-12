@@ -374,12 +374,13 @@ int sfs_open(char *dirname, char *name)
 		sfs_read_block(&dir,dir_bid); //read content of the dir from HD
 
 		/* traverse the inodes to see if the file exists.
-	   If it exists, load its inode. Otherwise, create a new file.
+	   	   If it exists, load its inode. Otherwise, create a new file.
 		 */
 
 		file_exists = 0;
 		free_inode_index = 0;
-		//IF file already exists
+
+		//IF Directory already exists
 		if(mkdir_result == -1){
 			for (i = 0; i < SFS_DB_NINODES; ++i)
 			{
@@ -399,22 +400,15 @@ int sfs_open(char *dirname, char *name)
 		/* case: file DNE or a new Directory */
 		if(file_exists == 0){
 
-			sfs_inode_t new_inode;
 			sfs_inode_frame_t new_frame;
 
 			inode_bid = sfs_alloc_block();
 			frame_bid = sfs_alloc_block();
 
 			//Setup the new Inode
-			new_inode.first_frame = frame_bid;
-			new_inode.size = 0;
-			strcpy(new_inode.file_name,name);
-
-			//Update the "open" fdtable
-			fdtable[free_fd_index].inode = new_inode;
-			fdtable[free_fd_index].inode_bid = inode_bid;
-			fdtable[free_fd_index].valid = 1;
-			fdtable[free_fd_index].cur = 0;
+			inode.first_frame = frame_bid;
+			inode.size = 0;
+			strcpy(inode.file_name,name);
 
 			//Initialize a fresh frame. set next and content to zero
 			new_frame.next = 0;
@@ -428,17 +422,17 @@ int sfs_open(char *dirname, char *name)
 			sfs_write_block(&dir,dir_bid);
 
 			//write new node and frame to HD
-			sfs_write_block(&new_inode,inode_bid);
+			sfs_write_block(&inode,inode_bid);
 			sfs_write_block(&new_frame,frame_bid);
-
-
-		}else{
-			//Update the "open" fdtable
-			fdtable[free_fd_index].inode = inode;
-			fdtable[free_fd_index].inode_bid = inode_bid;
-			fdtable[free_fd_index].valid = 1;
-			fdtable[free_fd_index].cur = 0;
 		}
+
+		//Update the "open" fdtable
+		fdtable[free_fd_index].dir_bid = dir_bid;
+		fdtable[free_fd_index].inode = inode;
+		fdtable[free_fd_index].inode_bid = inode_bid;
+		fdtable[free_fd_index].valid = 1;
+		fdtable[free_fd_index].cur = 0;
+
 
 		return free_fd_index;
 	}
@@ -464,13 +458,50 @@ int sfs_remove(int fd)
 	blkid frame_bid;
 	sfs_dirblock_t dir;
 	int i;
+	fd_struct_t file_desc;
+	sfs_inode_t inode;
+	sfs_inode_frame_t frame;
+	blkid dir_bid, inode_bid;
 
-	/* TODO: update dir */
+	//boundary check
+	if(0 < fd < SFS_MAX_OPENED_FILES){
 
-	/* TODO: free inode and all its frames */
+		/* 1- free inode and all its frames */
+		/* 2- update dir */
+		/* 3- close the file */
 
-	/* TODO: close the file */
-	return 0;
+		file_desc = fdtable[fd];
+		dir_bid = file_desc.dir_bid;
+		inode_bid = file_desc.inode_bid;
+
+		sfs_read_block(&dir,dir_bid);
+
+		//loop backwards becuz inode_bids were stored starting from last free dir.inodes[i] index
+		for (i = (SFS_DB_NINODES-1); i >= 0; --i)
+		{
+			if(dir.inodes[i] == inode_bid){
+
+				//update directory
+				dir.inodes[i] = 0;
+				sfs_write_block(&dir,dir_bid);
+
+				sfs_read_block(&inode,inode_bid);
+				frame_bid = inode.first_frame;
+
+				while(frame_bid != 0){
+					sfs_read_block(&frame,frame_bid);
+					sfs_free_block(frame_bid);
+					frame_bid = frame.next;
+				}
+				sfs_free_block(inode_bid);
+				break;
+			}
+		}
+		sfs_close(fd);
+		return 0;
+	}else{
+		return -1;
+	}
 }
 
 /*

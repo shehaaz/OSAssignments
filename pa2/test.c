@@ -78,15 +78,15 @@ static int testcase3(void)
 	if (sfs_ls() != 3) {
 		return 1;
 	}
-//	sfs_remove(fd2);
-//	sfs_remove(fd);
-//	if (sfs_ls() != 1) {
-//		return 1;
-//	}
-//	sfs_remove(fd3);
-//	if (sfs_ls() != 0) {
-//		return 1;
-//	}
+	sfs_remove(fd2);
+	sfs_remove(fd);
+	if (sfs_ls() != 1) {
+		return 1;
+	}
+	sfs_remove(fd3);
+	if (sfs_ls() != 0) {
+		return 1;
+	}
 	return 0;
 }
 
