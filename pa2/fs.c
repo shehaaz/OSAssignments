@@ -172,7 +172,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 			old_size_last_frame = temp_frame.next;
 		}
 		frame_bid = old_size_last_frame;    //find the blkid of the last frame prior to resizing
-		//printf("frameid %d \n", frame_bid);
+		
 
 
 		for (i = 0; i < (new_nframe - old_nframe); i++) {   //create the new frames and link them
@@ -195,15 +195,14 @@ static void sfs_resize_file(int fd, u32 new_size)
 			frame_bid = tmp_frame.next;
 		}
 
-		for (i = 0; i <= (new_nframe - old_nframe); i++) {  //FRAME_LEVEL
+		for (i = 0; i <= (new_nframe - old_nframe); i++) {  
 
 			int tmp_counter = 0;
 			sfs_inode_frame_t tmp_frame;
 			tmp_frame = frame;
 
-			for (j = 0; j < to_copy; j++) {     //FRAME_ENTRY(BLOCK)_LEVEL
+			for (j = 0; j < to_copy; j++) {     
 				tmp_frame.content[offset + tmp_counter] = sfs_alloc_block();
-				//printf("put blkid %d in frame %d index %d \n", tmp_frame.content[offset + tmp_counter], frame_bid, (offset + tmp_counter));
 				tmp_counter++;
 			}
 
@@ -283,11 +282,11 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 		sfs_read_block(&frame, tmp_frame.next);
 	}
 
-	for (i = 0; i <= (end_frame - start_frame); i++) {		//FRAME_LEVEL
+	for (i = 0; i <= (end_frame - start_frame); i++) {		
 		int tmp_cnt = 0;
 
-		for (j = 0; j < to_copy; j++) {				//
-			*bids = frame.content[tmp_cnt + offset];	//
+		for (j = 0; j < to_copy; j++) {				
+			*bids = frame.content[tmp_cnt + offset];	
 			tmp_cnt++;
 			bids++;
 			count2++;
@@ -383,7 +382,7 @@ int sfs_mkfs()
  */
 sfs_superblock_t *sfs_print_info()
 {
-	/* TODO: load the superblock from disk and print*/
+	/* load the superblock from disk and print*/
 
 	/*Argument 1: Pass the address of superblock "sb" as buffer to store the data fetched
 	  Argument 2: The superblock is at index 0*/
@@ -752,7 +751,6 @@ int sfs_write(int fd, void *buf, int length)
 		int tmp_counter = 0;
 		for (n = 0; n < to_copy; n++) {
 			*(tmp + offset + tmp_counter) = *p;
-			//  printf("%c", *p);
 			tmp_counter = tmp_counter + 1;
 			p++;
 		}
@@ -874,7 +872,7 @@ int sfs_read(int fd, void *buf, int length)
  */
 int sfs_seek(int fd, int relative, int loc)
 {
-	/* TODO: get the old cursor, change it as specified by the parameters */
+	/* get the old cursor, change it as specified by the parameters */
 	if (loc == SFS_SEEK_SET) {
 		fdtable[fd].cur = 0;
 	} else if (loc == SFS_SEEK_END) {
@@ -893,7 +891,7 @@ int sfs_seek(int fd, int relative, int loc)
  */
 int sfs_eof(int fd)
 {
-	/* TODO: check if the cursor has gone out of bound */
+	/* check if the cursor has gone out of bound */
 	if (fdtable[fd].cur == fdtable[fd].inode.size) {
 		return 1;
 	} else {
