@@ -155,7 +155,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 
 	if (remaining != 0) {   // if new blocks and/or frames need to be allocated
 
-		/* TODO: check if new frames are required */
+		/* check if new frames are required */
 
 		frame_size = SFS_FRAME_COUNT * BLOCK_SIZE;
 		old_nframe = (old_size / (SFS_FRAME_COUNT * BLOCK_SIZE)) + 1;
@@ -172,7 +172,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 			old_size_last_frame = temp_frame.next;
 		}
 		frame_bid = old_size_last_frame;    //find the blkid of the last frame prior to resizing
-		
+
 
 
 		for (i = 0; i < (new_nframe - old_nframe); i++) {   //create the new frames and link them
@@ -227,9 +227,9 @@ static void sfs_resize_file(int fd, u32 new_size)
 
 	}
 
-	/* TODO: allocate a full frame */
+	/* allocate a full frame */
 
-	/* TODO: add the new frame to the inode/frame list
+	/* add the new frame to the inode/frame list
 	   Note that if the inode is changed, you need to write it back
 	 */
 
@@ -267,6 +267,8 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 
 	remaining = (end - start) + 1;				// no. of blocks to read
 	offset = start % SFS_FRAME_COUNT;			// offset of first block within the frame
+
+
 	if (remaining < (SFS_FRAME_COUNT - offset)) {
 		to_copy = remaining;
 	} else {
@@ -274,6 +276,11 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 	}
 
 	sfs_read_block(&frame, fdtable[fd].inode.first_frame);
+
+
+	/* find blocks between start and end.
+	   Transverse the frame list if needed
+	 */
 
 	for (i = 0; i < start_frame; i++) {	// go to the start frame
 		sfs_inode_frame_t tmp_frame;
@@ -308,10 +315,6 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 
 	}
 
-
-	/* TODO: find blocks between start and end.
-	   Transverse the frame list if needed
-	 */
 
 	return blocks_written;
 }
@@ -712,8 +715,8 @@ int sfs_write(int fd, void *buf, int length)
 	blkid *original_bid;
 	original_bid = bids;
 	int i, n;
-	char *p = (char *)buf;
-	char tmp[BLOCK_SIZE];
+	char *p_buffer = (char *)buf;
+	char tmp_block[BLOCK_SIZE];
 	u32 cur = fdtable[fd].cur;
 	u32 num_content_blocks;
 	u32 num_bytes;
@@ -746,16 +749,16 @@ int sfs_write(int fd, void *buf, int length)
 
 
 	for (i = 0; i < num_content_blocks; i++) {
-		sfs_read_block(&tmp, *bids);
+		sfs_read_block(&tmp_block, *bids);
 
 		int tmp_counter = 0;
 		for (n = 0; n < to_copy; n++) {
-			*(tmp + offset + tmp_counter) = *p;
+			*(tmp_block + offset + tmp_counter) = *p_buffer;
 			tmp_counter = tmp_counter + 1;
-			p++;
+			p_buffer++;
 		}
 
-		sfs_write_block(&tmp, *bids);
+		sfs_write_block(&tmp_block, *bids);
 		num_bytes = num_bytes + to_copy;
 
 		fdtable[fd].cur = fdtable[fd].cur + to_copy;
