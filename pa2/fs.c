@@ -126,34 +126,37 @@ static void sfs_resize_file(int fd, u32 new_size)
 	int remaining, offset, to_copy;
 	int current_blocks;
 
-	/* calculate remaining, offset, to_copy */
-
-
-
-	if (fdtable[fd].inode.size == 0) {			// how many blocks are in use now
+	
+	/* Amount of blocks being used */
+	if (fdtable[fd].inode.size == 0) {			
 		current_blocks = 0;
 	} else {
 		current_blocks = (fdtable[fd].inode.size / BLOCK_SIZE) + 1;
 	}
 
-	remaining = ((new_size / BLOCK_SIZE) + 1) - (current_blocks);   //how many total blocks need to be allocated
 
 	if (fdtable[fd].inode.size == 0) {
 		offset = 0;
 	} else {
-		offset = ((fdtable[fd].inode.size / BLOCK_SIZE) % SFS_FRAME_COUNT) + 1; // the offset of the newly created block within its frame
+		/* The offset of the newly created block within its frame */
+		offset = ((fdtable[fd].inode.size / BLOCK_SIZE) % SFS_FRAME_COUNT) + 1; 
 		if (offset >= SFS_FRAME_COUNT) {
 			offset = 0;
 			go_forward_frame = 1;
 		}
 	}
+
+	/* calculate remaining, offset, to_copy */
+	remaining = ((new_size / BLOCK_SIZE) + 1) - (current_blocks);   //how many total blocks need to be allocated
+
 	if (remaining < (SFS_FRAME_COUNT - offset)) {
 		to_copy = remaining;
 	} else {
 		to_copy = SFS_FRAME_COUNT - offset;
 	}
 
-	if (remaining != 0) {   // if new blocks and/or frames need to be allocated
+	/* if fresh block and/or frames need to be allocated */
+	if (remaining != 0) {   
 
 		/* check if new frames are required */
 
@@ -779,9 +782,6 @@ int sfs_write(int fd, void *buf, int length)
 	//reset pointer
 	bids = original_bid;
 
-
-
-
 	/* update the cursor and free the temp buffer
 	   for sfs_get_file_content()
 	 */
@@ -806,18 +806,12 @@ int sfs_read(int fd, void *buf, int length)
 	char *p = (char *)buf;
 	char tmp[BLOCK_SIZE];
 	u32 cur = fdtable[fd].cur;
-	u32 number_of_content_blocks;
+	u32 num_cntnt_blks;
 	u32 bytes_read;
 
 	bytes_read = 0;
 	offset = cur % BLOCK_SIZE;
 	remaining = length;
-
-	if (remaining < (BLOCK_SIZE - offset)) {
-		to_copy = remaining;
-	} else {
-		to_copy = BLOCK_SIZE - offset;
-	}
 
 	/*check if we need to truncate */
 
@@ -825,11 +819,18 @@ int sfs_read(int fd, void *buf, int length)
 		length = (fdtable[fd].inode.size - cur) + 1;
 	}
 
+	/* Set amount to_copy */
+	if (remaining < (BLOCK_SIZE - offset)) {
+		to_copy = remaining;
+	} else {
+		to_copy = BLOCK_SIZE - offset;
+	}
+
 	/* similar to the sfs_write() */
 
-	number_of_content_blocks = sfs_get_file_content(bids, fd, cur, length);
+	num_cntnt_blks = sfs_get_file_content(bids, fd, cur, length);
 
-	for (i = 0; i < number_of_content_blocks; i++) {
+	for (i = 0; i < num_cntnt_blks; i++) {
 		sfs_read_block(&tmp, *bids);
 		int tmp_counter = 0;
 
@@ -839,11 +840,10 @@ int sfs_read(int fd, void *buf, int length)
 			p++;
 		}
 
-
-		bytes_read = bytes_read + to_copy;
-
 		fdtable[fd].cur = fdtable[fd].cur + to_copy;
 		remaining = remaining - to_copy;
+
+		bytes_read = bytes_read + to_copy;
 
 		if (remaining < BLOCK_SIZE) {
 			to_copy = remaining;
@@ -853,7 +853,6 @@ int sfs_read(int fd, void *buf, int length)
 			offset = 0;
 		}
 		bids++;
-
 	}
 
 	//reset pointer
