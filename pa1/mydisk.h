@@ -16,7 +16,6 @@ extern FILE *thefile;     /* the file that stores all blocks */
 extern int max_blocks;    /* max number of blocks given at initialization */
 extern int disk_type;     /* disk type, 0 for HDD and 1 for SSD */
 extern int cache_enabled; /* is cache enabled? 0 no, 1 yes */
-extern void *cache_buffer; /*cache data*/
 
 /**
  * initialize the disk
@@ -103,11 +102,5 @@ void mark_dirty(int block_id);
  * report the latecny, which will be displayed
  */
 void report_latency(int latency);
-
-void remove_first();
-
-int cache_length();
-
-void add_last(int block_id);
 
 #endif

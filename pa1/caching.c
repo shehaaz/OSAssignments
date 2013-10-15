@@ -8,12 +8,13 @@ typedef struct cache_entry
 {
 	int block_id;
 	int is_dirty;
-	void *content;
+	char content[BLOCK_SIZE];
 	struct cache_entry *next;
 }cache_entry;
 
+int cache_blocks;  /* number of blocks for the cache buffer */
 cache_entry *HeadCacheBlock;
-int num_cache_blocks;
+int counter =0;
 
 /* TODO: some helper functions e.g. find_cached_entry(block_id) */
 
@@ -23,17 +24,32 @@ int init_cache(int nblocks)
 	 * initialize entry data so that the the ring buffer is empty
 	 */
 	//use circular array showed in class
-	num_cache_blocks = nblocks;
-	printf("init_cache");
+	cache_entry *current;
+	cache_entry *tail;
 
 	if (nblocks == 0){
 		printf("\nNo Cache Blocks specified");
 		return -1;}
+	int i;
+	for(i=0;i<nblocks;i++)
+	{
+		current = malloc(sizeof(cache_entry));
+		current -> block_id = -1;
+		current -> is_dirty = 0;
 
-	HeadCacheBlock = malloc(sizeof(cache_entry));
-	HeadCacheBlock->next = NULL;
-
-
+		//Implementing a circular queue for the Cache
+		if(i==0){
+			HeadCacheBlock = current;
+			tail = current;
+		}
+		else{
+			current->next = HeadCacheBlock;
+			HeadCacheBlock = current;
+		}
+	}
+	//Joining the ends of the queue together
+	if (nblocks != 0)
+		tail->next = HeadCacheBlock;
 
 	return 0;
 }
@@ -41,34 +57,30 @@ int init_cache(int nblocks)
 int close_cache()
 {
 	/* TODO: release the memory for the ring buffer */
-
-	//Loop through and send data in the cache to the HDD
-
-	//Loop and free the memory
-
-
-	cache_entry *temp1;
-	cache_entry *temp2;
-	temp1 = HeadCacheBlock;
-
-	while(temp1->next != NULL){
-		if (temp1->is_dirty == 1){
-			fseek(thefile,temp1->block_id*BLOCK_SIZE,SEEK_SET);
-			fwrite(temp1->content,1,BLOCK_SIZE,thefile);
-			temp1->is_dirty = 0;
+	cache_entry *current;
+	cache_entry *a;
+	current = HeadCacheBlock;
+	int i;
+	for(i = 0;i<cache_blocks;i++){
+		if (current->is_dirty == 1){
+			fseek(thefile,current->block_id*BLOCK_SIZE,SEEK_SET);
+			fwrite(current->content,1,BLOCK_SIZE,thefile);
+			current->is_dirty = 0;
 		}
-		temp1 = temp1->next;
+		current = current->next;
+
 	}
 
 
-	temp2 = HeadCacheBlock;
-	while(temp2 != NULL){
-		temp1 = temp2;
-		temp2 = temp1->next;
-		free(temp1);
+	a = HeadCacheBlock;
+	for(i =0; i <= cache_blocks;i++){
+		current = a;
+		a=current->next;
+		free(current);
 	}
 
 
+	// free memory
 	return 0;
 }
 
@@ -78,17 +90,14 @@ void *get_cached_block(int block_id)
 	 * or return NULL if nut found 
 	 */
 
-	//Loop find the Block_id and return the content
-
-	cache_entry *temp;
-	temp=HeadCacheBlock;
-
-	while(temp->next != NULL){
-		if (temp->block_id==block_id) {
-			return temp->content;
-		} else {
-			temp =  temp->next;
+	cache_entry *current;
+	current=HeadCacheBlock;
+	int i;
+	for(i = 0;i<cache_blocks;i++){
+		if (current->block_id==block_id) {
+			return current->content;
 		}
+		current =  current->next;
 	}
 
 	return NULL;
@@ -103,74 +112,30 @@ void *create_cached_block(int block_id)
 	 * Note that: think if you can use mydisk_write_block() to 
 	 * flush dirty blocks to disk\
 	 */
-
-	if(cache_length() == num_cache_blocks){
-		remove_first();
-		add_last(block_id);
-	}else{
-		add_last(block_id);
+	counter = counter % 4;
+	int i;
+	cache_entry *current;
+	current=HeadCacheBlock;
+	for(i =0; i < counter; i++){
+		HeadCacheBlock = current->next;
 	}
+	// Modify the current block
+	current->block_id = block_id;
+	current->is_dirty=0;
 
-	return 0;
-}
-
-void add_last(int block_id){
-
-	cache_entry *new_entry;
-	new_entry = malloc(sizeof(cache_entry));
-	new_entry->block_id = block_id;
-	new_entry->content = cache_buffer;
-	new_entry->is_dirty = 0;
-
-	cache_entry *temp;
-
-	temp = HeadCacheBlock;
-
-	while(temp->next != NULL){
-		temp = temp->next;
-	}
-
-	new_entry->next = NULL;
-	temp->next = new_entry;
-
-}
-
-void remove_first(){
-
-	cache_entry *new_first;
-
-	new_first->next = HeadCacheBlock->next->next;
-	if(HeadCacheBlock->next->is_dirty == 1){
-		fseek(thefile,HeadCacheBlock->next->block_id*BLOCK_SIZE,SEEK_SET);
-		fwrite(HeadCacheBlock->next->content,1,BLOCK_SIZE,thefile);
-	}
-	free(HeadCacheBlock->next);
-	HeadCacheBlock->next = new_first;
-}
-
-int cache_length(){
-	cache_entry *temp;
-	int count = -1; //start at -1 to account for the HeadCacheBlock
-
-	temp = HeadCacheBlock;
-
-	while(temp != NULL){
-		temp = temp->next;
-		count++;
-	}
-	return count;
+	counter ++;
+	return current;
 }
 
 void mark_dirty (int block_id)
 {
-	cache_entry *temp;
-	temp=HeadCacheBlock;
-
-	while(temp->next != NULL){
-		if (temp->block_id == block_id){
-			temp->is_dirty = 1;
-			temp->content = cache_buffer;
+	cache_entry *current;
+	current=HeadCacheBlock;
+	int i;
+	for(i = 0;i< cache_blocks;i++){
+		if (current->block_id == block_id){
+			current->is_dirty = 1;
 		}
-		temp = temp->next;
+		current = current->next;
 	}
 }

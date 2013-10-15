@@ -84,19 +84,14 @@ int main()
 {
 	int size;
 
-
 	mydisk_init("diskfile", MAX_BLOCKS, 0);
-	printf("initializing the cache");
 	init_cache(CACHED_BLOCKS);
-	printf("done initializing cache");
 	
 	/* Test case 1: read/write block */
 	size = BLOCK_SIZE;
 	memset(buffer, 0, size);
 	strcpy(buffer, "hello world\n");
-	printf("writing test 1");
 	mydisk_write_block(0, buffer);
-	printf("wrote test 1");
 	memset(buffer2, 0, size);
 	mydisk_read_block(0, buffer2);
 	check_test(memcmp(buffer2, "hello world\n", 13));
@@ -139,4 +134,3 @@ int main()
 	mydisk_close();
 	return 0;
 }
-
