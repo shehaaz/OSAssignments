@@ -82,7 +82,7 @@ static blkid sfs_alloc_block()
  */
 static void sfs_free_block(blkid bid)
 {
-	/* TODO find the entry and bit that correspond to the block */
+	/* find the entry and bit that correspond to the block */
 	int entry_loc;
 	int bit_loc;
 
@@ -91,7 +91,7 @@ static void sfs_free_block(blkid bid)
 	//Find the bit that corresponds to the block
 	bit_loc = bid % SFS_NBITS_IN_FREEMAP_ENTRY;
 
-	/* TODO unset the bit and flush the freemap */
+	/* unset the bit and flush the freemap */
 
 	//Unset bit
 	freemap[entry_loc] = (freemap[entry_loc] & ~(0x00000001 << bit_loc));
@@ -175,6 +175,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 			sfs_read_block(&frame, temp_frame.next);
 			frame_prior_resizing = temp_frame.next;
 		}
+
 		//find the blkid of the last frame prior to resizing
 		frame_bid = frame_prior_resizing;
 
@@ -326,7 +327,8 @@ static blkid sfs_find_dir(char *dirname)
 {
 	blkid curr_bid = 0;
 	sfs_dirblock_t dir;
-	/* TODO: start from the sb.first_dir, treverse the linked list */
+
+	/* start from the sb.first_dir, traverse the linked list */
 
 	curr_bid = sb.first_dir;
 
@@ -398,8 +400,8 @@ sfs_superblock_t *sfs_print_info()
  */
 int sfs_mkdir(char *dirname)
 {
-	/* TODO: test if the dir exists */
-	/* TODO: insert a new dir to the linked list */
+	/* test if the dir exists */
+	/* insert a new dir to the linked list */
 
 	sfs_dirblock_t new_dir;
 	blkid first_bid, new_dir_bid;
@@ -446,9 +448,9 @@ int sfs_mkdir(char *dirname)
  */
 int sfs_rmdir(char *dirname)
 {
-	/* TODO: check if the dir exists */
-	/* TODO: check if no files */
-	/* TODO: go thru the linked list and delete the dir*/
+	/* check if the dir exists */
+	/* check if no files */
+	/* go thru the linked list and delete the dir*/
 
 	if(sfs_find_dir(dirname) != 0){
 
