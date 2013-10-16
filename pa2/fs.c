@@ -118,10 +118,10 @@ static void sfs_resize_file(int fd, u32 new_size)
 	int i, j;
 	blkid frame_bid = 0;
 	/* blkid of the last frame prior to resizing */
-	blkid old_size_last_frame = 0;
+	blkid frame_prior_resizing = 0;
 	sfs_inode_frame_t frame;
 
-	int go_forward_frame = 0;
+	int jump_to_next_frame = 0;
 
 	int remaining, offset, to_copy;
 	int current_blocks;
@@ -134,7 +134,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 		current_blocks = (fdtable[fd].inode.size / BLOCK_SIZE) + 1;
 	}
 
-
+	//set offset
 	if (fdtable[fd].inode.size == 0) {
 		offset = 0;
 	} else {
@@ -142,13 +142,14 @@ static void sfs_resize_file(int fd, u32 new_size)
 		offset = ((fdtable[fd].inode.size / BLOCK_SIZE) % SFS_FRAME_COUNT) + 1; 
 		if (offset >= SFS_FRAME_COUNT) {
 			offset = 0;
-			go_forward_frame = 1;
+			jump_to_next_frame = 1;
 		}
 	}
 
 	/* calculate remaining, offset, to_copy */
 	remaining = ((new_size / BLOCK_SIZE) + 1) - (current_blocks);   //how many total blocks need to be allocated
 
+	//setup to_copy amount
 	if (remaining < (SFS_FRAME_COUNT - offset)) {
 		to_copy = remaining;
 	} else {
@@ -167,18 +168,19 @@ static void sfs_resize_file(int fd, u32 new_size)
 
 
 		sfs_read_block(&frame, fdtable[fd].inode.first_frame);
-		old_size_last_frame = fdtable[fd].inode.first_frame;
+		frame_prior_resizing = fdtable[fd].inode.first_frame;
 		while (frame.next != 0) {           //get the last frame, put it in frame
 			sfs_inode_frame_t temp_frame;
 			temp_frame = frame;
 			sfs_read_block(&frame, temp_frame.next);
-			old_size_last_frame = temp_frame.next;
+			frame_prior_resizing = temp_frame.next;
 		}
-		frame_bid = old_size_last_frame;    //find the blkid of the last frame prior to resizing
+		//find the blkid of the last frame prior to resizing
+		frame_bid = frame_prior_resizing;
 
 
-
-		for (i = 0; i < (new_nframe - old_nframe); i++) {   //create the new frames and link them
+		 //create new frames and link them together
+		for (i = 0; i < (new_nframe - old_nframe); i++) {
 			sfs_inode_frame_t temp_frame;
 			temp_frame.next = 0;
 			frame.next = sfs_alloc_block();
@@ -188,10 +190,13 @@ static void sfs_resize_file(int fd, u32 new_size)
 			sfs_read_block(&frame, frame_bid);
 		}
 
-		sfs_read_block(&frame, old_size_last_frame); //get the last frame prior to resizing
-		frame_bid = old_size_last_frame;
+		//get the last frame prior to resizing
+		sfs_read_block(&frame, frame_prior_resizing);
+		//reset frame_bid to state before resizing
+		frame_bid = frame_prior_resizing;
 
-		if (go_forward_frame == 1) {
+		//Jump to next frame because offset > SFS_FRAME_COUNT
+		if (jump_to_next_frame == 1) {
 			sfs_inode_frame_t tmp_frame;
 			tmp_frame = frame;
 			sfs_read_block(&frame, tmp_frame.next);
@@ -200,15 +205,17 @@ static void sfs_resize_file(int fd, u32 new_size)
 
 		for (i = 0; i <= (new_nframe - old_nframe); i++) {  
 
-			int tmp_counter = 0;
+
 			sfs_inode_frame_t tmp_frame;
 			tmp_frame = frame;
 
+			int counter = 0;
 			for (j = 0; j < to_copy; j++) {     
-				tmp_frame.content[offset + tmp_counter] = sfs_alloc_block();
-				tmp_counter++;
+				tmp_frame.content[offset + counter] = sfs_alloc_block();
+				counter++;
 			}
 
+			//traverse the Linked List
 			sfs_write_block(&tmp_frame, frame_bid);
 
 			sfs_read_block(&frame, tmp_frame.next);
@@ -216,18 +223,13 @@ static void sfs_resize_file(int fd, u32 new_size)
 			frame_bid = tmp_frame.next;
 
 			remaining = remaining - to_copy;
+			offset = 0;
 			if (remaining < SFS_FRAME_COUNT) {
 				to_copy = remaining;
-				offset = 0;
 			} else {
 				to_copy = SFS_FRAME_COUNT;
-				offset = 0;
 			}
-
-
-
 		}
-
 	}
 
 	/* allocate a full frame */
@@ -290,11 +292,12 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 
 	for (i = 0; i <= (end_frame - start_frame); i++) {
 
+		int counter = 0;
+
 		//setup *bids
 		for (j = 0; j < to_copy; j++) {
-			int count = 0;
-			*bids = frame.content[count + offset];
-			count++;
+			*bids = frame.content[counter + offset];
+			counter++;
 			bids++;
 		}
 
