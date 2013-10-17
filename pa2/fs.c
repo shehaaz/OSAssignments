@@ -24,7 +24,7 @@ static void sfs_flush_freemap()
 	size_t i;
 	blkid bid = 1;
 	char *p = (char *)freemap;
-	/* TODO: write freemap block one by one */
+	/*write freemap block one by one */
 
 	//write freemap to Block_ID 1 on HD
 	sfs_write_block(&freemap,bid);
@@ -38,9 +38,9 @@ static blkid sfs_alloc_block()
 	u32 size = sb.nfreemap_blocks * BLOCK_SIZE / sizeof(u32);
 	u32 i;
 	int freemap_bit,offset,block_id;
-	/* TODO: find a freemap entry that has a free block */
+	/* find a freemap entry that has a free block */
 
-	/* TODO: find out which bit in the entry is zero,
+	/* find out which bit in the entry is zero,
 	   set the bit, flush and return the bid
 	 */
 
@@ -180,7 +180,7 @@ static void sfs_resize_file(int fd, u32 new_size)
 		frame_bid = frame_prior_resizing;
 
 
-		 //create new frames and link them together
+		//create new frames and link them together
 		for (i = 0; i < (new_nframe - old_nframe); i++) {
 			sfs_inode_frame_t temp_frame;
 			temp_frame.next = 0;
@@ -276,16 +276,15 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 	// offset of first block in the frame
 	offset = start_block % SFS_FRAME_COUNT;
 
+	//read first block
+	sfs_read_block(&frame, fdtable[fd].inode.first_frame);
+
 	//calculate to_copy with "offset"
 	if (remaining < (SFS_FRAME_COUNT - offset)) {
 		to_copy = remaining;
 	} else {
 		to_copy = (SFS_FRAME_COUNT - offset);
 	}
-
-	//read first block
-	sfs_read_block(&frame, fdtable[fd].inode.first_frame);
-
 
 	/* find blocks between start and end.
 	   Transverse the frame list if needed
@@ -294,7 +293,6 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 	for (i = 0; i <= (end_frame - start_frame); i++) {
 
 		int counter = 0;
-
 		//setup *bids
 		for (j = 0; j < to_copy; j++) {
 			*bids = frame.content[counter + offset];
@@ -304,15 +302,6 @@ static u32 sfs_get_file_content(blkid *bids, int fd, u32 cur, u32 length)
 
 		//update
 		blocks_written = blocks_written + to_copy;
-		remaining = remaining - to_copy;
-		offset = 0;
-
-		if (remaining < SFS_FRAME_COUNT) {
-			to_copy = remaining;
-		} else {
-			to_copy = SFS_FRAME_COUNT;
-		}
-		sfs_read_block(&frame, frame.next);
 	}
 
 	return blocks_written;
