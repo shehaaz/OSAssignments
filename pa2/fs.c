@@ -699,12 +699,11 @@ int sfs_ls()
  */
 int sfs_write(int fd, void *buf, int length)
 {
-	int remaining, offset, to_copy;
+	int remaining, offset, to_copy, i, n;
 	blkid *bids = malloc(sizeof(*bids) * ((length - 1) / BLOCK_SIZE + 1));;
 	blkid *original_bid;
 	//save the pointer location of "bids"
 	original_bid = bids;
-	int i, n;
 	char *p_buffer = (char *)buf;
 	char tmp_block[BLOCK_SIZE];
 	u32 cur = fdtable[fd].cur;
