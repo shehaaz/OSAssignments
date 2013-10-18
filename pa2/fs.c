@@ -580,21 +580,19 @@ int sfs_write(int fd, void *buf, int length)
 	num_bytes = 0;
 	resize_needed = ((cur + length) > fdtable[fd].inode.size);
 
+	/*get the block ids of all contents (using sfs_get_file_content() */
+	num_cntnt_blks = sfs_get_file_content(bids,fd,cur,length);
+
 	/* set remaining, offset, to_copy */
 	offset = cur % BLOCK_SIZE;
 	remaining = length;
-	if (remaining < (BLOCK_SIZE - offset)) {
-		to_copy = remaining;
-	} else {
-		to_copy = BLOCK_SIZE - offset;
-	}
-	/* resize needed? */
-	if (resize_needed) {
-		sfs_resize_file(fd, (cur + length));
-	}
 
-	/*get the block ids of all contents (using sfs_get_file_content() */
-	num_cntnt_blks = sfs_get_file_content(bids,fd,cur,length);
+	if (remaining < (BLOCK_SIZE - offset)) to_copy = remaining;
+	else to_copy = BLOCK_SIZE - offset;
+
+	/* resize needed? */
+	if (resize_needed) sfs_resize_file(fd, (cur + length));
+
 
 	/* main loop, go through every block, copy the necessary parts
 	   to the buffer, consult the hint in the document. Do not forget to 
@@ -605,12 +603,13 @@ int sfs_write(int fd, void *buf, int length)
 
 		sfs_read_block(&tmp_block, *bids);
 
-		int tmp_counter = 0;
+		int step_counter = 0;
 		for (n = 0; n < to_copy; n++) {
-			*(tmp_block + offset + tmp_counter) = *p_buffer;
-			tmp_counter = tmp_counter + 1;
+			*(tmp_block + offset + step_counter) = *p_buffer;
+			step_counter = step_counter + 1;
 			p_buffer++;
 		}
+
 		//writing to HD
 		sfs_write_block(&tmp_block, *bids);
 
@@ -618,13 +617,12 @@ int sfs_write(int fd, void *buf, int length)
 		fdtable[fd].cur = fdtable[fd].cur + to_copy;
 		remaining = remaining - to_copy;
 		num_bytes = num_bytes + to_copy;
-		offset = 0;
 
-		if (remaining < BLOCK_SIZE) {
-			to_copy = remaining;
-		} else {
-			to_copy = BLOCK_SIZE;
-		}
+
+		if (remaining < BLOCK_SIZE) to_copy = remaining;
+		else to_copy = BLOCK_SIZE;
+
+		offset = 0;
 		bids++;
 	}
 
@@ -662,24 +660,18 @@ int sfs_read(int fd, void *buf, int length)
 	offset = cur % BLOCK_SIZE;
 	remaining = length;
 
-	/*check if we need to truncate */
-
-	if (cur + length > fdtable[fd].inode.size) {
-		length = (fdtable[fd].inode.size - cur) + 1;
-	}
 
 	/* Set amount to_copy */
-	if (remaining < (BLOCK_SIZE - offset)) {
-		to_copy = remaining;
-	} else {
-		to_copy = BLOCK_SIZE - offset;
-	}
+	if (remaining < (BLOCK_SIZE - offset)) to_copy = remaining;
+	else to_copy = BLOCK_SIZE - offset;
+
 
 	/* similar to the sfs_write() */
 
 	num_cntnt_blks = sfs_get_file_content(bids, fd, cur, length);
 
 	for (i = 0; i < num_cntnt_blks; i++) {
+
 		sfs_read_block(&tmp, *bids);
 		int tmp_counter = 0;
 
@@ -694,13 +686,10 @@ int sfs_read(int fd, void *buf, int length)
 
 		bytes_read = bytes_read + to_copy;
 
-		if (remaining < BLOCK_SIZE) {
-			to_copy = remaining;
-			offset = 0;
-		} else {
-			to_copy = BLOCK_SIZE;
-			offset = 0;
-		}
+		if (remaining < BLOCK_SIZE) to_copy = remaining;
+		else to_copy = BLOCK_SIZE;
+
+		offset = 0;
 		bids++;
 	}
 
