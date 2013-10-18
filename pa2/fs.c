@@ -280,6 +280,7 @@ int sfs_mkdir(char *dirname)
 		}
 
 		/* Using the append new directory in front of Linked List technique */
+
 		//Make new_dir point to first dir
 		new_dir.next_dir = sb.first_dir;
 		//make sb point to new_dir
@@ -570,19 +571,14 @@ int sfs_write(int fd, void *buf, int length)
 	blkid *original_bid;
 	//save the pointer location of "bids"
 	original_bid = bids;
-	int i, n;
+	int i, n, resize_needed;
 	char *p_buffer = (char *)buf;
 	char tmp_block[BLOCK_SIZE];
 	u32 cur = fdtable[fd].cur;
-	u32 num_cntnt_blks;
-	u32 num_bytes;
+	u32 num_cntnt_blks, num_bytes;
 
 	num_bytes = 0;
-
-	/*check if we need to resize */
-	if ((cur + length) > fdtable[fd].inode.size) {
-		sfs_resize_file(fd, (cur + length));
-	}
+	resize_needed = ((cur + length) > fdtable[fd].inode.size);
 
 	/* set remaining, offset, to_copy */
 	offset = cur % BLOCK_SIZE;
@@ -592,7 +588,10 @@ int sfs_write(int fd, void *buf, int length)
 	} else {
 		to_copy = BLOCK_SIZE - offset;
 	}
-
+	/* resize needed? */
+	if (resize_needed) {
+		sfs_resize_file(fd, (cur + length));
+	}
 
 	/*get the block ids of all contents (using sfs_get_file_content() */
 	num_cntnt_blks = sfs_get_file_content(bids,fd,cur,length);
