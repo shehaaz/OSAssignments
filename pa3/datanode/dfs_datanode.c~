@@ -43,7 +43,7 @@ static void *heartbeat()
 	for (;;)
 	{
 		int heartbeat_socket = -1;
-		//TODO: create a socket to the namenode, assign file descriptor id to heartbeat_socket
+		//TODO: create a thread to the namenode, assign file descriptor id to heartbeat_socket
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
 		close(heartbeat_socket);

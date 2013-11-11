@@ -237,12 +237,11 @@ int test_case_7(char **argv)
 	args[0] = argv[0];
 	args[1] = argv[1];
 	args[2] = "local_file";
-	int r2 = test_case_2(argv, 1024);
+	test_case_2(argv, 1024);
 	args[2] = "local_file_medium";
-	int r6 = test_case_4(argv, 4096);
+	test_case_4(argv, 4096);
 	args[2] = "local_file_large";
-	int r8	= test_case_6(argv, 8192);
-	return r2 || r6 || r8;
+	test_case_6(argv, 8192);
 }
 
 int test_case_8(char **argv, int op_type)

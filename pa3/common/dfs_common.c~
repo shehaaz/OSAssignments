@@ -25,7 +25,7 @@ int create_tcp_socket()
 
 /**
  * create the socket and connect it to the destination address
- * return the socket fd
+ * 0 - success, 1 - failure
  */
 int create_client_tcp_socket(char* address, int port)
 {
