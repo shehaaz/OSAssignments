@@ -7,6 +7,7 @@ dfs_cm_file_t* file_images[MAX_FILE_COUNT];
 int fileCount;
 int dncnt;
 int safeMode = 1;
+struct sockaddr_in nn_addr;
 
 int mainLoop(int server_socket)
 {
@@ -51,17 +52,38 @@ static void *heartbeatService()
 int start(int argc, char **argv)
 {
 	assert(argc == 2);
+
 	int i = 0;
 	for (i = 0; i < MAX_DATANODE_NUM; i++) dnlist[i] = NULL;
 	for (i = 0; i < MAX_FILE_COUNT; i++) file_images[i] = NULL;
 
 	//TODO:create a thread to handle heartbeat service
 	//you can implement the related function in dfs_common.c and call it here
+	pthread_t heart_beat_listener;
+	pthread_create(&heart_beat_listener, NULL, heartbeatService, NULL);
 
 	int server_socket = INVALID_SOCKET;
+	server_socket =  socket(AF_INET, SOCK_STREAM, 0);
+
+	if (server_socket < 0) return 1;
+	nn_addr.sin_family = AF_INET;
+	nn_addr.sin_addr.s_addr = INADDR_ANY;
+	nn_addr.sin_port = htons(atoi(argv[1]));
+
 	//TODO: create a socket to listen the client requests and replace the value of server_socket with the socket's fd
 
+	if (bind(server_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr)) == -1) {
+        printf("error while binding\n");
+        return 1;
+	}
+
+	if (listen(server_socket, 5) == -1) {
+        printf("error while listening\n");
+        return 1;
+	}
+
 	assert(server_socket != INVALID_SOCKET);
+
 	return mainLoop(server_socket);
 }
 

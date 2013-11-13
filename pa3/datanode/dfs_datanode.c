@@ -36,16 +36,41 @@ int mainLoop()
 
 static void *heartbeat()
 {
+	struct sockaddr_in nn_addr;
+	int hb_port = 50030;
 	dfs_cm_datanode_status_t datanode_status;
 	datanode_status.datanode_id = datanode_id;
 	datanode_status.datanode_listen_port = datanode_listen_port;
+
+	//set nn_addr
+	memset((void *) &nn_addr, 0, sizeof(nn_addr));
+	nn_addr.sin_family = AF_INET;
+	nn_addr.sin_addr.s_addr = INADDR_ANY;
+	nn_addr.sin_port = htons(hb_port);
 
 	for (;;)
 	{
 		int heartbeat_socket = -1;
 		//TODO: create a socket to the namenode, assign file descriptor id to heartbeat_socket
+		if ((heartbeat_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+			perror("datanode, socket");
+			exit(EXIT_FAILURE);
+		}
 		assert(heartbeat_socket != INVALID_SOCKET);
 		//send datanode_status to namenode
+		if (connect(heartbeat_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr))
+				== -1)
+		{
+			perror("datanode, connect");
+			exit(EXIT_FAILURE);
+		}
+
+		if (send(heartbeat_socket, (void *) &datanode_status, sizeof(dfs_cm_datanode_status_t), 0)
+				== -1) {
+			perror("datanode, send");
+			exit(EXIT_FAILURE);
+		}
+
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
 	}
@@ -68,6 +93,10 @@ int start(int argc, char **argv)
 	strcpy(working_directory, argv[4]);
 	//start one thread to report to the namenode periodically
 	//TODO: start a thread to report heartbeat
+
+	pthread_t heart_beat_reporter;
+	pthread_create(&heart_beat_reporter, NULL, heartbeat, NULL);
+
 
 	return mainLoop();
 }
