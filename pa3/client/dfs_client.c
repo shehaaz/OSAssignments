@@ -12,7 +12,7 @@ int connect_to_nn(char* address, int port)
 
 	memset((void *) &nn_addr, 0, sizeof(nn_addr));
 	nn_addr.sin_family = AF_INET;
-	nn_addr.sin_addr.s_addr = inet_addr(nn_ip);
+	nn_addr.sin_addr.s_addr = inet_addr(address);
 	nn_addr.sin_port = htons(port);
 
 	//create a TCP socket
@@ -59,6 +59,8 @@ int push_file(int namenode_socket, const char* local_path)
 	FILE* file = fopen(local_path, "rb");
 	assert(file != NULL);
 
+	FILE *fp = NULL;
+	fp = fopen(local_path, "rb");
 	fseek(fp, 0, SEEK_END);
 	len = ftell(file);
 	fseek(fp, 0, SEEK_SET);
@@ -163,8 +165,8 @@ int pull_file(int namenode_socket, const char *filename)
 	req.file_size = 0;
 	req.req_type = 0;
 
-	//send request to namenode through nn_sockfd
-	if (send(nn_sockfd, &req, sizeof(req), 0) < 0) {
+	//send request to namenode through namenode_socket
+	if (send(namenode_socket, &req, sizeof(req), 0) < 0) {
 		perror("client -> namenode, send");
 		exit(1);
 	}

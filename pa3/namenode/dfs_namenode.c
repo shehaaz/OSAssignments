@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-dfs_datanode_t* dnlist[MAX_DATANODE_NUM];
+dfs_datanode_t* dnlist[MAX_DATANODE_NUM]; //datanode_descriptor
 dfs_cm_file_t* file_images[MAX_FILE_COUNT];
 int fileCount;
 int dncnt;
@@ -73,13 +73,13 @@ int start(int argc, char **argv)
 	//TODO: create a socket to listen the client requests and replace the value of server_socket with the socket's fd
 
 	if (bind(server_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr)) == -1) {
-        printf("error while binding\n");
-        return 1;
+		printf("error while binding\n");
+		return 1;
 	}
 
 	if (listen(server_socket, 5) == -1) {
-        printf("error while listening\n");
-        return 1;
+		printf("error while listening\n");
+		return 1;
 	}
 
 	assert(server_socket != INVALID_SOCKET);
@@ -89,6 +89,10 @@ int start(int argc, char **argv)
 
 int register_datanode(int heartbeat_socket)
 {
+	struct sockaddr_in hb_dn_addr;
+	dfs_cm_datanode_status_t datanode_status;
+	int hb_dn_sockfd;
+	int sin_len = sizeof(struct sockaddr_in);
 	for (;;)
 	{
 		int datanode_socket = -1;
@@ -96,12 +100,41 @@ int register_datanode(int heartbeat_socket)
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
 		//TODO: receive datanode's status via datanode_socket
+		hb_dn_sockfd = accept(heartbeat_socket, (struct sockaddr *) &hb_dn_addr, &sin_len);
 
-		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
-		{
-			//TODO: fill dnlist
-			//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
-			safeMode = 0;
+		if(hb_dn_sockfd > 0){
+
+            void *datanode_status_buffer = &datanode_status;
+            int response_len = 0, len = 0;
+
+            while (1) {
+
+                 response_len = recv(hb_dn_sockfd, datanode_status_buffer, sizeof(dfs_cm_datanode_status_t), 0);
+
+                 datanode_status_buffer = datanode_status_buffer + response_len;
+                 len = len + response_len;
+
+                 if (len == sizeof(dfs_cm_datanode_status_t)) {
+                     break;
+                 }
+
+             }
+
+			if (datanode_status.datanode_id < MAX_DATANODE_NUM)
+			{
+				//TODO: fill dnlist
+				//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
+				int dd_id = datanode_status.datanode_id;
+				if (NULL == dnlist[dd_id - 1])
+				{
+					dnlist[dd_id - 1] = (dfs_datanode_t *)malloc(sizeof(dfs_datanode_t));
+					dncnt++;
+				}
+				dnlist[dd_id - 1]->live_marks++;
+				strcpy(dnlist[dd_id-1]->ip, inet_ntoa(hb_dn_addr.sin_addr));
+				dnlist[dd_id - 1]->port = datanode_status.datanode_listen_port;
+				safeMode = 0;
+			}
 		}
 		close(datanode_socket);
 	}
@@ -114,7 +147,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 
 	dfs_cm_file_t** end_file_image = file_images + MAX_FILE_COUNT;
 	dfs_cm_file_t** file_image = file_images;
-	
+
 	// Try to find if there is already an entry for that file
 	while (file_image != end_file_image)
 	{
@@ -140,9 +173,9 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		(*file_image)->file_size = request.file_size;
 		(*file_image)->blocknum = 0;
 	}
-	
+
 	int block_count = (request.file_size + (DFS_BLOCK_SIZE - 1)) / DFS_BLOCK_SIZE;
-	
+
 	int first_unassigned_block_index = (*file_image)->blocknum;
 	(*file_image)->blocknum = block_count;
 	int next_data_node_index = 0;
@@ -204,18 +237,18 @@ int requests_dispatcher(int client_socket, dfs_cm_client_req_t request)
 	//0 - read, 1 - write, 2 - query, 3 - modify
 	switch (request.req_type)
 	{
-		case 0:
-			get_file_location(client_socket, request);
-			break;
-		case 1:
-			get_file_receivers(client_socket, request);
-			break;
-		case 2:
-			get_system_information(client_socket, request);
-			break;
-		case 3:
-			get_file_update_point(client_socket, request);
-			break;
+	case 0:
+		get_file_location(client_socket, request);
+		break;
+	case 1:
+		get_file_receivers(client_socket, request);
+		break;
+	case 2:
+		get_system_information(client_socket, request);
+		break;
+	case 3:
+		get_file_update_point(client_socket, request);
+		break;
 	}
 	return 0;
 }
