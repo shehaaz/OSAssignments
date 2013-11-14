@@ -37,7 +37,7 @@ int mainLoop()
 static void *heartbeat()
 {
 	struct sockaddr_in nn_addr;
-	int hb_port = 50030;
+	int hb_port = 50030; //This is the port for the HB service
 	dfs_cm_datanode_status_t datanode_status;
 	datanode_status.datanode_id = datanode_id;
 	datanode_status.datanode_listen_port = datanode_listen_port;

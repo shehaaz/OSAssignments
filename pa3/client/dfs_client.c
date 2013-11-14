@@ -245,9 +245,14 @@ dfs_system_status *get_system_info(int namenode_socket)
 	assert(namenode_socket != INVALID_SOCKET);
 	//TODO fill the result and send 
 	dfs_cm_client_req_t request;
+	//req_type: query datanodes
+	request->req_type = 2;
+
+	
 	
 	//TODO: get the response
 	dfs_system_status *response; 
+	//get the number of data nodes
 
 	return response;		
 }
