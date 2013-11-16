@@ -11,6 +11,8 @@ inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 	//TODO: create the thread and run it
 	pthread_t * thread;
 
+	pthread_create(thread,NULL,entry_point,args);
+
 	return thread;
 }
 

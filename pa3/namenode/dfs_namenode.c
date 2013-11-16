@@ -60,18 +60,18 @@ int start(int argc, char **argv)
 
 	//TODO:create a thread to handle heartbeat service
 	//you can implement the related function in dfs_common.c and call it here
-	pthread_t heart_beat_listener;
-	pthread_create(&heart_beat_listener, NULL, heartbeatService, NULL);
 
+	create_thread(heartbeatService,NULL); //function in dfs_common.c
+
+	//TODO: create a socket to listen to the client requests and replace the value of server_socket with the socket's fd
 	int server_socket = INVALID_SOCKET;
-	server_socket =  socket(AF_INET, SOCK_STREAM, 0);
+	server_socket =  create_tcp_socket();
 
 	if (server_socket < 0) return 1;
+
 	nn_addr.sin_family = AF_INET;
 	nn_addr.sin_addr.s_addr = INADDR_ANY;
-	nn_addr.sin_port = htons(atoi(argv[1]));
-
-	//TODO: create a socket to listen the client requests and replace the value of server_socket with the socket's fd
+	nn_addr.sin_port = htons(atoi(argv[1])); //first argument is the port number
 
 	if (bind(server_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr)) == -1) {
 		printf("error while binding\n");
