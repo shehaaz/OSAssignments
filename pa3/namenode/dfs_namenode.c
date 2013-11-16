@@ -23,6 +23,7 @@ int mainLoop(int server_socket)
 		unsigned int client_address_length = sizeof(client_address);
 		int client_socket = -1;
 		//TODO: accept the connection from the client and assign the return value to client_socket
+		client_socket = accept(server_socket, (struct sockaddr *) &client_address, &client_address_length);
 
 		assert(client_socket != INVALID_SOCKET);
 

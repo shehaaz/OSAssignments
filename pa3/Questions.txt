@@ -1,0 +1,15 @@
+Questions: 
+
+How do we receive requests fom clients and fill in the dfd_cm_client_req_t
+
+	dfs_cm_client_req_t request;
+		//TODO: receive requests from client and fill it in request
+
+typedef struct _dfs_client_request_
+{
+	char file_name[256];
+	int file_size;
+	int req_type;//0-read, 1-write, 2-query datanodes, 3 - modify file;
+}dfs_cm_client_req_t;
+
+	
