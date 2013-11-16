@@ -65,23 +65,7 @@ int start(int argc, char **argv)
 
 	//TODO: create a socket to listen to the client requests and replace the value of server_socket with the socket's fd
 	int server_socket = INVALID_SOCKET;
-	server_socket =  create_tcp_socket();
-
-	if (server_socket < 0) return 1;
-
-	nn_addr.sin_family = AF_INET;
-	nn_addr.sin_addr.s_addr = INADDR_ANY;
-	nn_addr.sin_port = htons(atoi(argv[1])); //first argument is the port number
-
-	if (bind(server_socket, (struct sockaddr *) &nn_addr, sizeof(nn_addr)) == -1) {
-		printf("error while binding\n");
-		return 1;
-	}
-
-	if (listen(server_socket, 5) == -1) {
-		printf("error while listening\n");
-		return 1;
-	}
+	server_socket =  create_server_tcp_socket(atoi(argv[1]));
 
 	assert(server_socket != INVALID_SOCKET);
 
