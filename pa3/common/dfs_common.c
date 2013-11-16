@@ -20,7 +20,7 @@ inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 int create_tcp_socket()
 {
 	//TODO:create the socket and return the file descriptor 
-	return -1;
+	return socket(AF_INET, SOCK_STREAM, 0);
 }
 
 /**
@@ -33,6 +33,17 @@ int create_client_tcp_socket(char* address, int port)
 	int socket = create_tcp_socket();
 	if (socket == INVALID_SOCKET) return 1;
 	//TODO: connect it to the destination port
+
+	struct sockaddr_in serv_addr;
+	bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(port);
+
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+              error("ERROR on binding");
+
+
 	return socket;
 }
 
