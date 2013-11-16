@@ -6,12 +6,16 @@
  * args - argument of the function
  * return the handler of the thread
  */
-inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
+inline pthread_t* create_thread(void * (*entry_point)(void*), void *args)
 {
 	//TODO: create the thread and run it
-	pthread_t * thread;
+	pthread_t *thread;
 
-	pthread_create(thread,NULL,entry_point,args);
+	pthread_t p_thread;
+
+	pthread_create(&p_thread,NULL,entry_point,args);
+
+	thread = &p_thread;
 
 	return thread;
 }
@@ -48,6 +52,7 @@ int create_client_tcp_socket(char* address, int port)
 int create_server_tcp_socket(int port)
 {
 	assert(port >= 0 && port < 65536);
+	
 	int socket = create_tcp_socket();
 	if (socket == INVALID_SOCKET) return 1;
 	//TODO: listen on local port

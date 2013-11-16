@@ -54,9 +54,9 @@ int start(int argc, char **argv)
 {
 	assert(argc == 2);
 
-	int i = 0;
-	for (i = 0; i < MAX_DATANODE_NUM; i++) dnlist[i] = NULL;
-	for (i = 0; i < MAX_FILE_COUNT; i++) file_images[i] = NULL;
+//	int i = 0;
+//	for (i = 0; i < MAX_DATANODE_NUM; i++) dnlist[i] = NULL;
+//	for (i = 0; i < MAX_FILE_COUNT; i++) file_images[i] = NULL;
 
 	//TODO:create a thread to handle heartbeat service
 	//you can implement the related function in dfs_common.c and call it here
@@ -240,6 +240,7 @@ int requests_dispatcher(int client_socket, dfs_cm_client_req_t request)
 
 int main(int argc, char **argv)
 {
+	printf("I am in namenode main()\n");
 	int i = 0;
 	for (; i < MAX_DATANODE_NUM; i++)
 		dnlist[i] = NULL;
