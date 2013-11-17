@@ -77,7 +77,7 @@ int register_datanode(int heartbeat_socket)
 	for (;;)
 	{
 		int datanode_socket = -1;
-		struct sockaddr_in sock_addr;
+		sockaddr_in sock_addr;
 		int sock_len = sizeof(struct sockaddr_in);
 
 		//TODO: accept connection from DataNodes and assign return value to datanode_socket;
@@ -111,13 +111,13 @@ int register_datanode(int heartbeat_socket)
 			if(dnlist[datanode_id - 1] == NULL)
 			{
 				//Making room for a datanode
-				dnlist[datanode_id - 1] = (dfd_datanode_t *)malloc(sizeof(dfs_datanode_t));
+				dnlist[datanode_id - 1] = (dfs_datanode_t *) malloc(sizeof(dfs_datanode_t));
 			}
 
 			//filling in the information for the datanode
-			dnlist[dd_id - 1].live_marks++;
-			strcpy(dnlist[dd_id-1].ip, inet_ntoa(sock_addr.sin_addr));
-			dnlist[datanode_id - 1].port = datanode_status.datanode_listen_port;
+			dnlist[datanode_id - 1]->live_marks++;
+			strcpy(dnlist[datanode_id-1]->ip, inet_ntoa(sock_addr.sin_addr));
+			dnlist[datanode_id - 1]->port = datanode_status.datanode_listen_port;
 
 			safeMode = 0;
 		}

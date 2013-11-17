@@ -16,18 +16,42 @@ int mainLoop()
 	int server_socket = -1;
 	//TODO: create a server socket and listen on it, you can implement dfs_common.c and call it here
 
+	server_socket = create_server_tcp_socket(datanode_listen_port);
+
 	assert (server_socket != INVALID_SOCKET);
 
 	// Listen to requests from the clients
 	for (;;)
 	{
-		sockaddr_in client_address;
 		int client_socket = -1;
+		sockaddr_in client_address;
+		int sock_len = sizeof(struct sockaddr_in);
+
 		//TODO: accept the client request
+		client_socket = accept(server_socket, (struct sockaddr *) &client_address, &sock_len);
 		assert(client_socket != INVALID_SOCKET);
+
 		dfs_cli_dn_req_t request;
+		void *request_holder = &request;
+		int resp_len, len = 0;
 		//TODO: receive data from client_socket, and fill it to request
+
+		while(1){
+
+			//fill in info at &request
+			resp_len = recv(client_socket, request_holder, sizeof(dfs_cli_dn_req_t), 0);
+			//jump the resp_len
+			request_holder = request_holder + resp_len;
+			//calculate the total length
+			len = len + resp_len;
+
+			if(len == sizeof(dfs_cli_dn_req_t)){
+				break;
+			}
+		}
+
 		requests_dispatcher(client_socket, request);
+
 		close(client_socket);
 	}
 	close(server_socket);
