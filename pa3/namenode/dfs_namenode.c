@@ -54,9 +54,9 @@ int start(int argc, char **argv)
 {
 	assert(argc == 2);
 
-//	int i = 0;
-//	for (i = 0; i < MAX_DATANODE_NUM; i++) dnlist[i] = NULL;
-//	for (i = 0; i < MAX_FILE_COUNT; i++) file_images[i] = NULL;
+	int i = 0;
+	for (i = 0; i < MAX_DATANODE_NUM; i++) dnlist[i] = NULL;
+	for (i = 0; i < MAX_FILE_COUNT; i++) file_images[i] = NULL;
 
 	//TODO:create a thread to handle heartbeat service
 	//you can implement the related function in dfs_common.c and call it here
@@ -74,10 +74,6 @@ int start(int argc, char **argv)
 
 int register_datanode(int heartbeat_socket)
 {
-	struct sockaddr_in hb_dn_addr;
-	dfs_cm_datanode_status_t datanode_status;
-	int hb_dn_sockfd;
-	int sin_len = sizeof(struct sockaddr_in);
 	for (;;)
 	{
 		int datanode_socket = -1;
@@ -85,41 +81,12 @@ int register_datanode(int heartbeat_socket)
 		assert(datanode_socket != INVALID_SOCKET);
 		dfs_cm_datanode_status_t datanode_status;
 		//TODO: receive datanode's status via datanode_socket
-		hb_dn_sockfd = accept(heartbeat_socket, (struct sockaddr *) &hb_dn_addr, &sin_len);
 
-		if(hb_dn_sockfd > 0){
-
-            void *datanode_status_buffer = &datanode_status;
-            int response_len = 0, len = 0;
-
-            while (1) {
-
-                 response_len = recv(hb_dn_sockfd, datanode_status_buffer, sizeof(dfs_cm_datanode_status_t), 0);
-
-                 datanode_status_buffer = datanode_status_buffer + response_len;
-                 len = len + response_len;
-
-                 if (len == sizeof(dfs_cm_datanode_status_t)) {
-                     break;
-                 }
-
-             }
-
-			if (datanode_status.datanode_id < MAX_DATANODE_NUM)
-			{
-				//TODO: fill dnlist
-				//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
-				int dd_id = datanode_status.datanode_id;
-				if (NULL == dnlist[dd_id - 1])
-				{
-					dnlist[dd_id - 1] = (dfs_datanode_t *)malloc(sizeof(dfs_datanode_t));
-					dncnt++;
-				}
-				dnlist[dd_id - 1]->live_marks++;
-				strcpy(dnlist[dd_id-1]->ip, inet_ntoa(hb_dn_addr.sin_addr));
-				dnlist[dd_id - 1]->port = datanode_status.datanode_listen_port;
-				safeMode = 0;
-			}
+		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
+		{
+			//TODO: fill dnlist
+			//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
+			safeMode = 0;
 		}
 		close(datanode_socket);
 	}
