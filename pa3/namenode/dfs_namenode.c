@@ -77,15 +77,48 @@ int register_datanode(int heartbeat_socket)
 	for (;;)
 	{
 		int datanode_socket = -1;
+		struct sockaddr_in sock_addr;
+		int sock_len = sizeof(struct sockaddr_in);
+
 		//TODO: accept connection from DataNodes and assign return value to datanode_socket;
+		datanode_socket = accept(heartbeat_socket, (struct sockaddr *) &sock_addr, &sock_len);
 		assert(datanode_socket != INVALID_SOCKET);
+
 		dfs_cm_datanode_status_t datanode_status;
+
 		//TODO: receive datanode's status via datanode_socket
+
+		void *status_holder = &datanode_status;
+		int resp_len, len = 0;
+
+		while(1){
+
+			resp_len = recv(datanode_socket, status_holder, sizeof(dfs_cm_datanode_status_t), 0);
+			status_holder = status_holder + resp_len;
+			len = len + resp_len;
+
+			if(len == sizeof(dfs_cm_datanode_status_t)){
+				break;
+			}
+		}
 
 		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
 		{
 			//TODO: fill dnlist
 			//principle: a datanode with id of n should be filled in dnlist[n - 1] (n is always larger than 0)
+			int datanode_id = datanode_status.datanode_id;
+
+			if(dnlist[datanode_id - 1] == NULL)
+			{
+				//Making room for a datanode
+				dnlist[datanode_id - 1] = (dfd_datanode_t *)malloc(sizeof(dfs_datanode_t));
+			}
+
+			//filling in the information for the datanode
+			dnlist[dd_id - 1].live_marks++;
+			strcpy(dnlist[dd_id-1].ip, inet_ntoa(sock_addr.sin_addr));
+			dnlist[datanode_id - 1].port = datanode_status.datanode_listen_port;
+
 			safeMode = 0;
 		}
 		close(datanode_socket);
