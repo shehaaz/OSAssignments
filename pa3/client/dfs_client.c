@@ -252,7 +252,7 @@ dfs_system_status *get_system_info(int namenode_socket)
 	dfs_system_status *response; 
 	//get the number of data nodes
 
-	//response = get_system_information(namenode_socket,request); //This function is in the namenode
+	response = get_system_information(namenode_socket,request); //This function is in the namenode
 
 	return response;		
 }

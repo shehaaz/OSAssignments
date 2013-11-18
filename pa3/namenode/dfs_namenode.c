@@ -236,6 +236,11 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 	assert(client_socket != INVALID_SOCKET);
 	//TODO:fill the response and send back to the client
 	dfs_system_status response;
+
+	response.datanode_num = MAX_DATANODE_NUM;
+	response.datanodes = dnlist;
+
+	send(client_socket, &response, sizeof(dfs_system_status), 0) 
 }
 
 int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
