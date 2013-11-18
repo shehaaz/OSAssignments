@@ -1,3 +1,4 @@
+
 Questions: 
 
 - How do we receive requests fom clients and fill in the dfd_cm_client_req_t
@@ -21,3 +22,6 @@ Questions:
 
 - How to //send datanode_status to namenode?
 	in dfd_datanode heartbeat()
+
+- namenode.c get_file_receivers
+	assigning data blocks to datanodes RR style

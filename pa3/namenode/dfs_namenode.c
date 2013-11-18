@@ -169,26 +169,66 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 
 	dfs_cm_file_res_t response;
 	memset(&response, 0, sizeof(response));
+	
 	//TODO: fill the response and send it back to the client
+
+	if (send(client_socket, &file_dsp, sizeof(dfs_cm_file_res_t), 0) < 0)
+	{
+		perror("error on sending response to client:");
+		return 1;
+	}
 
 	return 0;
 }
 
 int get_file_location(int client_socket, dfs_cm_client_req_t request)
 {
-	int i = 0;
-	for (i = 0; i < MAX_FILE_COUNT; ++i)
-	{
-		dfs_cm_file_t* file_image = file_images[i];
-		if (file_image == NULL) continue;
-		if (strcmp(file_image->filename, request.file_name) != 0) continue;
-		dfs_cm_file_res_t response;
-		//TODO: fill the response and send it back to the client
 
-		return 0;
+	int i = 0;
+	int FileImgIndex;
+	dfs_cm_file_res_t file_dsp;
+	//TODO:query the file in FileImgInMemory
+	//send out by send();
+
+	for (i = 0; i < MAX_FILE_COUNT; i++) {
+		if (strcmp(FileImgInMemory[i]->filename, req.file_name) == 0) {
+			FileImgIndex = i;
+			break;
+		}
 	}
-	//FILE NOT FOUND
-	return 1;
+
+
+	memcpy(file_dsp.query_result.block_list, FileImgInMemory[FileImgIndex]->block_list, sizeof(dfs_cm_block_t));
+    memcpy(file_dsp.query_result.filename, FileImgInMemory[FileImgIndex]->filename, 256);
+    
+	file_dsp.query_result.blocknum = FileImgInMemory[FileImgIndex]->blocknum;
+
+
+	if (send(client_socket, &file_dsp, sizeof(dfs_cm_file_res_t), 0) < 0)
+	{
+		perror("error on sending response to client:");
+		return 1;
+	}
+
+	return 0;
+
+
+	// int i = 0;
+	// int FileImgIndex;
+	// dfs_cm_file_res_t file_dsp;
+	
+	// for (i = 0; i < MAX_FILE_COUNT; ++i)
+	// {
+	// 	dfs_cm_file_t* file_image = file_images[i];
+	// 	if (file_image == NULL) continue;
+	// 	if (strcmp(file_image->filename, request.file_name) != 0) continue;
+	// 	dfs_cm_file_res_t response;
+	// 	//TODO: fill the response and send it back to the client
+
+	// 	return 0;
+	// }
+	// //FILE NOT FOUND
+	// return 1;
 }
 
 void get_system_information(int client_socket, dfs_cm_client_req_t request)
