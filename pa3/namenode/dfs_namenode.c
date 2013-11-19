@@ -5,7 +5,7 @@
 dfs_datanode_t* dnlist[MAX_DATANODE_NUM]; //datanode_descriptor
 dfs_cm_file_t* file_images[MAX_FILE_COUNT];
 int fileCount;
-int dncnt;
+int dncnt; //datanode count
 int safeMode = 1;
 struct sockaddr_in nn_addr;
 
@@ -27,10 +27,16 @@ int mainLoop(int server_socket)
 
 		assert(client_socket != INVALID_SOCKET);
 
-		dfs_cm_client_req_t request;
+
 		//TODO: receive requests from client and fill it in request
 
-		requests_dispatcher(client_socket, request);
+		/* fetch data via client_socket once the connection
+		has been established. */
+		if(client_socket != -1){
+			dfs_cm_client_req_t request;
+			receive_data(client_socket,(void *) &request, sizeof(request));
+			requests_dispatcher(client_socket, request);
+		}
 		close(client_socket);
 	}
 	return 0;
@@ -86,21 +92,8 @@ int register_datanode(int heartbeat_socket)
 
 		dfs_cm_datanode_status_t datanode_status;
 
-		//TODO: receive datanode's status via datanode_socket
-
-		void *status_holder = &datanode_status;
-		int resp_len, len = 0;
-
-		while(1){
-
-			resp_len = recv(datanode_socket, status_holder, sizeof(dfs_cm_datanode_status_t), 0);
-			status_holder = status_holder + resp_len;
-			len = len + resp_len;
-
-			if(len == sizeof(dfs_cm_datanode_status_t)){
-				break;
-			}
-		}
+		//receive datanode's status via datanode_socket
+		receive_data(datanode_socket,(void *) &datanode_status, sizeof(dfs_cm_datanode_status_t));
 
 		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
 		{
@@ -112,6 +105,7 @@ int register_datanode(int heartbeat_socket)
 			{
 				//Making room for a datanode
 				dnlist[datanode_id - 1] = (dfs_datanode_t *) malloc(sizeof(dfs_datanode_t));
+				dncnt++; //increment the datanode count
 			}
 
 			//filling in the information for the datanode
@@ -164,47 +158,49 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
     int first_unassigned_block_index = (*file_image)->blocknum;
     (*file_image)->blocknum = block_count;
     int next_data_node_index = 0;
+    int stop =  block_count + first_unassigned_block_index;
 
     //TODO:Assign data blocks to datanodes, round-robin style (see the Documents)
+
+	dfs_datanode_t *data_node;
+	dfs_cm_block_t *block;
+    int index;
+	for (index = first_unassigned_block_index; index < stop; index++)
+	{
+
+		data_node = dnlist[next_data_node_index];
+		assert(data_node != NULL);
+
+		/*
+		 * Set the data block to the file descriptor's memory location
+		 * We will modify this memory location and memcpy it later into the response
+		 * sent to the client */
+		block = &(*file_image->block_list[index]);
+
+		//Populate the block
+		strcpy(block->owner_name, request.file_name);
+		strcpy(block->loc_ip, data_node->ip);
+		block->dn_id = data_node->dn_id;
+		block->block_id = index;
+		block->loc_port = data_node->port;
+
+		//Using the technique learnt in class to find the next free index
+		next_data_node_index = (next_data_node_index + 1) % (dncnt);
+	}
 
     dfs_cm_file_res_t response;
     memset(&response, 0, sizeof(response));
     //TODO: fill the response and send it back to the client
 
+    //Filling in the data
+    memcpy(&(response.query_result), *file_image, sizeof(dfs_cm_file_t));
+    //sending the data to the client_socket
+    send_data(client_socket, (void *)&response, sizeof(response));
     return 0;
 }
 
 int get_file_location(int client_socket, dfs_cm_client_req_t request)
 {
-
-//	int i = 0;
-//	int FileImgIndex;
-//	dfs_cm_file_res_t file_dsp;
-//	//TODO:query the file in FileImgInMemory
-//	//send out by send();
-//
-//	for (i = 0; i < MAX_FILE_COUNT; i++) {
-//		if (strcmp(FileImgInMemory[i]->filename, req.file_name) == 0) {
-//			FileImgIndex = i;
-//			break;
-//		}
-//	}
-//
-//
-//	memcpy(file_dsp.query_result.block_list, FileImgInMemory[FileImgIndex]->block_list, sizeof(dfs_cm_block_t));
-//    memcpy(file_dsp.query_result.filename, FileImgInMemory[FileImgIndex]->filename, 256);
-//
-//	file_dsp.query_result.blocknum = FileImgInMemory[FileImgIndex]->blocknum;
-//
-//
-//	if (send(client_socket, &file_dsp, sizeof(dfs_cm_file_res_t), 0) < 0)
-//	{
-//		perror("error on sending response to client:");
-//		return 1;
-//	}
-//
-//	return 0;
-
 
 	int i = 0;
 	int FileImgIndex;
@@ -215,8 +211,16 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 	 	dfs_cm_file_t* file_image = file_images[i];
 	 	if (file_image == NULL) continue;
 	 	if (strcmp(file_image->filename, request.file_name) != 0) continue;
+
 	 	dfs_cm_file_res_t response;
 	 	//TODO: fill the response and send it back to the client
+
+	 	//Fill response with zeros
+		bzero((char *) &response, sizeof(response));
+		//copy file into response
+		memcpy(&(response.query_result), file_image, sizeof(dfs_cm_file_t));
+		//send response to client_socket
+		send_data(client_socket, (void *)&response, sizeof(response));
 
 	 	return 0;
 	 }
@@ -230,8 +234,11 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 	//TODO:fill the response and send back to the client
 	dfs_system_status response;
 
-	response.datanode_num = MAX_DATANODE_NUM;
-	//response.datanodes = dnlist;
+	//set datanode_num to data_node count
+	response.datanode_num = dncnt;
+	response.datanodes = dnlist; //BUG
+
+	send_data(client_socket, (void *) &response, sizeof(dfs_system_status));
 }
 
 int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
@@ -242,11 +249,16 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
 		dfs_cm_file_t* file_image = file_images[i];
 		if (file_image == NULL) continue;
 		if (strcmp(file_image->filename, request.file_name) != 0) continue;
+
 		dfs_cm_file_res_t response;
+
 		//TODO: fill the response and send it back to the client
 		// Send back the data block assignments to the client
 		memset(&response, 0, sizeof(response));
+		memcpy(&(response.query_result), *file_image, sizeof(dfs_cm_file_t)); //BUG
+
 		//TODO: fill the response and send it back to the client
+		send_data(client_socket, (void *)&response, sizeof(dfs_cm_file_res_t));
 		return 0;
 	}
 	//FILE NOT FOUND
