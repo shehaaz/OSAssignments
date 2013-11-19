@@ -175,7 +175,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 		 * Set the data block to the file descriptor's memory location
 		 * We will modify this memory location and memcpy it later into the response
 		 * sent to the client */
-		block = &(*file_image->block_list[index]);
+		block = &((*file_image)->block_list[index]);
 
 		//Populate the block
 		strcpy(block->owner_name, request.file_name);
@@ -236,7 +236,8 @@ void get_system_information(int client_socket, dfs_cm_client_req_t request)
 
 	//set datanode_num to data_node count
 	response.datanode_num = dncnt;
-	response.datanodes = dnlist; //BUG
+	//memory copy the data_node list into the response
+	memcpy(response.datanodes, *dnlist, sizeof(response.datanodes));
 
 	send_data(client_socket, (void *) &response, sizeof(dfs_system_status));
 }
@@ -255,7 +256,7 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
 		//TODO: fill the response and send it back to the client
 		// Send back the data block assignments to the client
 		memset(&response, 0, sizeof(response));
-		memcpy(&(response.query_result), *file_image, sizeof(dfs_cm_file_t)); //BUG
+		memcpy(&(response.query_result), file_image, sizeof(dfs_cm_file_t));
 
 		//TODO: fill the response and send it back to the client
 		send_data(client_socket, (void *)&response, sizeof(dfs_cm_file_res_t));
