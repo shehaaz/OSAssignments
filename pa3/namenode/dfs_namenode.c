@@ -219,7 +219,7 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 		//copy file into response
 		memcpy(&(response.query_result), file_image, sizeof(dfs_cm_file_t));
 		//send response to client_socket
-		send_data(client_socket, (void *)&response, sizeof(response));
+		send_data(client_socket, (void *)&response, sizeof(dfs_cm_file_res_t));
 
 	 	return 0;
 	 }
