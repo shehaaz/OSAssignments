@@ -256,7 +256,7 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
 		memcpy(&(response.query_result), file_image, sizeof(dfs_cm_file_t));
 		//printf("Namenode: sending update point of %s\n", response.query_result.file_name);
 
-		send_data(client_socket, (void *)&response, sizeof(response));
+		send_data(client_socket, (void *)&response, sizeof(dfs_cm_file_res_t));
 		return 0;
 	}
 	//FILE NOT FOUND
