@@ -8,7 +8,7 @@ int test_case_0(char **argv, int op_type)
 {
 	dfs_system_status *sys_stat = NULL;
 	if ((sys_stat = send_sysinfo_request(argv)) == NULL) return 1;
-	if (sys_stat->datanode_num == 2) 
+	if (sys_stat->datanode_num == 2)
 	{
 		free(sys_stat);
 		return 0;
@@ -16,10 +16,10 @@ int test_case_0(char **argv, int op_type)
 	return 1;
 }
 
-//write 
+//write
 int test_case_1(char **argv, int op_type)
 {
-	if (send_file_request(argv, "local_file", 1) == -1) 
+	if (send_file_request(argv, "local_file", 1) == -1)
 	{
 		return 1;
 	}
@@ -37,7 +37,7 @@ int test_case_1(char **argv, int op_type)
 	memset(local_buf, 0, DFS_BLOCK_SIZE);
 	fread(buf, DFS_BLOCK_SIZE, 1, fp);
 	fread(local_buf, DFS_BLOCK_SIZE, 1, local_fp);
-	if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0) 
+	if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0)
 	{
 		ret = 1;
 	}
@@ -53,7 +53,7 @@ int test_case_2(char **argv, int op_type)
 	system("rm -f local_file");
 	if (send_file_request(argv, "local_file", 0) == -1)
 	{
-		return 1; 
+		return 1;
 	}
 	int ret = 0;
 	char *buf = (char *) malloc(sizeof(char) * 1024);
@@ -74,7 +74,7 @@ int test_case_2(char **argv, int op_type)
 
 int test_case_3(char **argv, int op_type)
 {
-	if (send_file_request(argv, "local_file_medium", 1) == -1) 
+	if (send_file_request(argv, "local_file_medium", 1) == -1)
 	{
 		return 1;
 	}
@@ -107,7 +107,7 @@ int test_case_3(char **argv, int op_type)
 		fread(buf, DFS_BLOCK_SIZE, 1, fp);
 		fseek(local_fp, i * DFS_BLOCK_SIZE, SEEK_SET);
 		fread(local_buf, DFS_BLOCK_SIZE, 1, local_fp);
-		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0) 
+		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0)
 		{
 			printf("failed on %d\n", i);
 			fclose(fp);
@@ -191,7 +191,7 @@ int test_case_5(char **argv, int op_type)
 		fread(buf, DFS_BLOCK_SIZE, 1, fp);
 		fseek(local_fp, i * DFS_BLOCK_SIZE, SEEK_SET);
 		fread(local_buf, DFS_BLOCK_SIZE, 1, local_fp);
-		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0) 
+		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0)
 		{
 			printf("failed on %d\n", i);
 			fclose(fp);
@@ -231,7 +231,7 @@ int test_case_6(char **argv, int op_type)
 	return ret;
 }
 
-int test_case_7(char **argv) 
+int test_case_7(char **argv)
 {
 	char **args = (char **) malloc(sizeof(char *) * 3);
 	args[0] = argv[0];
@@ -255,10 +255,10 @@ int test_case_8(char **argv, int op_type)
 	FILE *local_fp = fopen("local_file", "rb");
 	char *local_buf = (char *) malloc(sizeof(char) * DFS_BLOCK_SIZE);
 	char *buf = (char *) malloc(sizeof(char) * DFS_BLOCK_SIZE);
-	if (modify_file(argv[1], atoi(argv[2]), "local_file", 2048, 1024, 2047) == -1) 
+	if (modify_file(argv[1], atoi(argv[2]), "local_file", 2048, 1024, 2047) == -1)
 	{
 		fclose(local_fp);
-		return 1; 
+		return 1;
 	}
 	sleep(5);
 	str_arr[0] = blk_0;
@@ -271,7 +271,7 @@ int test_case_8(char **argv, int op_type)
 		fread(buf, DFS_BLOCK_SIZE, 1, fp);
 		fseek(local_fp, i * DFS_BLOCK_SIZE, SEEK_SET);
 		fread(local_buf, DFS_BLOCK_SIZE, 1, local_fp);
-		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0) 
+		if (memcmp(local_buf, buf, DFS_BLOCK_SIZE) != 0)
 		{
 			printf("failed on %d\n", i);
 			ret = 1;
@@ -295,7 +295,7 @@ void append_data(char *out_file, int append_size)
 		fputc(c, fp);
 	}
 	fclose(fp);
-	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 6));
+	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 7));
 	sprintf(cmd, "cp %s %s_1", out_file, out_file);
 	system(cmd);
 	free(cmd);
@@ -312,7 +312,7 @@ void generate_data(char *out_file, int file_size)
 		fputc(c, fp);
 	}
 	fclose(fp);
-	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 6));
+	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 7));
 	sprintf(cmd, "cp %s %s_1", out_file, out_file);
 	system(cmd);
 	free(cmd);
@@ -321,18 +321,18 @@ void generate_data(char *out_file, int file_size)
 int main(int argc, char **argv)
 {
 	assert(argc == 3);
-	
+
 	char *result[2];
 	result[0] = "PASS";
 	result[1] = "FAILED";
-	
+
 	printf("TEST CASE 0:%s\n", result[test_case_0(argv, 2)]);
 	//generate data
 	//can contact to single datanode
 	generate_data("local_file", 1024);
 	printf("TEST CASE 1:%s\n", result[test_case_1(argv, 1)]);
 	printf("TEST CASE 2:%s\n", result[test_case_2(argv, 0)]);
-	//can contact to two datanodes	
+	//can contact to two datanodes
 	generate_data("local_file_medium", 4096);
 	printf("TEST CASE 3:%s\n", result[test_case_3(argv, 1)]);
 	printf("TEST CASE 4:%s\n", result[test_case_4(argv, 0)]);

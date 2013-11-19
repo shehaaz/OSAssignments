@@ -127,7 +127,7 @@ void generate_data(char *out_file, int file_size)
 		fputc(c, fp);
 	}
 	fclose(fp);
-	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 6));
+	char *cmd = (char *) malloc(sizeof(char) * (strlen(out_file) * 2 + 7));
 	sprintf(cmd, "cp %s %s_1", out_file, out_file);
 	system(cmd);
 	free(cmd);

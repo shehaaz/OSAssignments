@@ -53,10 +53,10 @@ typedef struct _block_descriptor_
 
 typedef struct _file_descriptor_
 {
-	char filename[256];
+	int blocknum;
 	dfs_cm_block_t block_list[MAX_FILE_BLK_COUNT];
 	int file_size;
-	int blocknum;
+	char filename[256];
 }dfs_cm_file_t;
 
 typedef struct _system_descriptor_

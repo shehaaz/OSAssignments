@@ -10,7 +10,7 @@ void ext_close_local_fs() {}
 int get_block_file_path(char *path, const char *filename, int block_id)
 {
 	sprintf(path, "%s%s_blk_%d", working_directory, filename, block_id);
-	printf("%s\n", path);
+	// printf("%s\n", path);
 	return strlen(path);
 }
 
@@ -43,7 +43,7 @@ int ext_write_block(const char *filename, int block_id, void *buf)
 	get_block_file_path(fullpath, filename, block_id);
 	block_file_ptr = fopen(fullpath, "wb");
 	ret = fwrite(buf, DFS_BLOCK_SIZE, 1, block_file_ptr);
-	printf("write successfully on %s\n", fullpath);
+	// printf("write successfully on %s\n", fullpath);
 	fclose(block_file_ptr);
 	free(fullpath);
 	return ret;

@@ -13,33 +13,29 @@ char *working_directory = NULL;
 int mainLoop()
 {
 	//we don't consider concurrent operations in this assignment
-	int server_socket = -1;
-	//TODO: create a server socket and listen on it, you can implement dfs_common.c and call it here
-
-	server_socket = create_server_tcp_socket(50059 + datanode_id); //datanode_listen_port
+	//create a server socket and listen on it, you can implement dfs_common.c and call it here
+	int server_socket = create_server_tcp_socket(50059 + datanode_id);
 
 	assert (server_socket != INVALID_SOCKET);
 
 	// Listen to requests from the clients
 	for (;;)
 	{
-		printf("datanode has started");
-		int client_socket = -1;
 		sockaddr_in client_address;
-		int sock_len = sizeof(sockaddr_in);
+		int len = sizeof(client_address);
 
-		//TODO: accept the client request
-		client_socket = accept(server_socket, (sockaddr *) &client_address, &(sock_len));
+		// printf("datanode reporting for duty!\n");
+		// accept the client request
+		int client_socket = accept(server_socket, (sockaddr *)&client_address, &(len));
 		assert(client_socket != INVALID_SOCKET);
-
 		dfs_cli_dn_req_t request;
+		// receive data from client_socket, and fill it to request
 
-		//TODO: receive data from client_socket, and fill it to request
-
-		receive_data(client_socket,(void *) &request,sizeof(dfs_cli_dn_req_t));
-
+		if(read(client_socket, (void *)&request, sizeof(request)) < 0) {
+			printf("mainLoop in datanode %d: problem reading data\n", datanode_id);
+		}
+		// printf("datanode: Awesome,something to do\n");
 		requests_dispatcher(client_socket, request);
-
 		close(client_socket);
 	}
 	close(server_socket);
@@ -54,12 +50,15 @@ static void *heartbeat()
 
 	for (;;)
 	{
-		int heartbeat_socket = -1;
-		//TODO: create a thread to the namenode, assign file descriptor id to heartbeat_socket
-		heartbeat_socket = create_tcp_socket();
+		// create a socket to the namenode, assign file descriptor id to heartbeat_socket
+		// printf("Heartbeat from datanode\n");
+		int heartbeat_socket = create_client_tcp_socket("127.0.0.1", 50030);
 		assert(heartbeat_socket != INVALID_SOCKET);
-		
+
 		//send datanode_status to namenode
+		write(heartbeat_socket, (void *)&datanode_status, sizeof(datanode_status));
+		// printf("Datanode: heartbeat...\n");
+
 		close(heartbeat_socket);
 		sleep(HEARTBEAT_INTERVAL);
 	}
@@ -80,11 +79,10 @@ int start(int argc, char **argv)
 	datanode_listen_port = atoi(argv[1]);
 	working_directory = (char *)malloc(sizeof(char) * strlen(argv[4]) + 1);
 	strcpy(working_directory, argv[4]);
-	//start one thread to report to the namenode periodically
-	//TODO: start a thread to report heartbeat
+	// start one thread to report to the namenode periodically
+	// start a thread to report heartbeat
 
-	create_thread(heartbeat,NULL);
-
+	pthread_t *thread = create_thread(heartbeat, NULL);
 
 	return mainLoop();
 }
@@ -95,14 +93,18 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 	assert(request != NULL);
 	char buffer[DFS_BLOCK_SIZE];
 	ext_read_block(request->block.owner_name, request->block.block_id, (void *)buffer);
-	//TODO:response the client with the data
+	// response the client with the data
+
 	memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
+	printf("Datanode: Reading filename: %s, block_id: %d\n", request->block.owner_name, request->block.block_id);
+
 	send_data(client_socket, (void *)&(request->block), sizeof(dfs_cm_block_t));
 	return 0;
 }
 
 int create_block(const dfs_cli_dn_req_t* request)
 {
+	printf("Datanode: Write filename: %s, block_id: %d\n", request->block.owner_name, request->block.block_id);
 	ext_write_block(request->block.owner_name, request->block.block_id, (void *)request->block.content);
 	return 0;
 }

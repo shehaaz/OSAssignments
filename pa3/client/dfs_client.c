@@ -37,36 +37,31 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 
 int push_file(int namenode_socket, const char* local_path)
 {
-    assert(namenode_socket != INVALID_SOCKET);
-    assert(local_path != NULL);
-    FILE* file = fopen(local_path, "rb");
-    assert(file != NULL);
 
-    // Create the push request
-    dfs_cm_client_req_t request;
+	assert(namenode_socket != INVALID_SOCKET);
+	assert(local_path != NULL);
+	FILE* file = fopen(local_path, "rb");
+	assert(file != NULL);
 
-    //TODO:fill the fields in request and
+	// Create the push request
+	dfs_cm_client_req_t request;
 
-    //set file_name
-    strcpy(request.file_name, local_path);
-
-    fseek(file, 0L, SEEK_END);
-
-    request.file_size = ftell(file);
-
+	// fill the fields in request and
+	strcpy(request.file_name, local_path);
+	fseek(file, 0L, SEEK_END);
+	request.file_size = ftell(file);
 	fseek(file, 0L, SEEK_SET);
 	request.req_type = 1;
+	send_data(namenode_socket, (void *)&request, sizeof(request));
 
-	send_data(namenode_socket, (void *)&request, sizeof(dfs_cm_client_req_t));
+	// Receive the response
+	dfs_cm_file_res_t response;
+	receive_data(namenode_socket, (void *)&response, sizeof(response));
 
-    //TODO:Receive the response
-    dfs_cm_file_res_t response;
-    receive_data(namenode_socket, (void *)&response, sizeof(dfs_cm_client_req_t));
 
-    //TODO: Send blocks to datanodes one by one
-    int i;
-    int stop = response.query_result.blocknum;
-
+	// Send blocks to datanodes one by one
+	int i;
+	int stop = response.query_result.blocknum;;
 	for (i = 0; i < stop; i++)
 	{
 		fread(&(response.query_result.block_list[i].content), DFS_BLOCK_SIZE, 1, file);
@@ -77,36 +72,33 @@ int push_file(int namenode_socket, const char* local_path)
 		send_data(client_socket, (void *)&req, sizeof(req));
 	}
 
-
-    fclose(file);
-    return 0;
+	fclose(file);
+	return 0;
 }
 
 int pull_file(int namenode_socket, const char *filename)
 {
-    assert(namenode_socket != INVALID_SOCKET);
-    assert(filename != NULL);
+	assert(namenode_socket != INVALID_SOCKET);
+	assert(filename != NULL);
 
-    //TODO: fill the request, and send
-    dfs_cm_client_req_t request;
-    request.req_type = 0; // 0-read
-    strcpy(request.file_name, filename); //set the filename
-    request.file_size = 0;
-    //WRITE the filled in request to the namenode_socket
-    send_data(namenode_socket, (void *) &request, sizeof(dfs_cm_client_req_t));
+	// fill the request, and send
+	dfs_cm_client_req_t request;
+	strcpy(request.file_name, filename);
+	request.file_size = 0;
+	request.req_type = 0;
+	send_data(namenode_socket, (void *)&request, sizeof(request));
 
-    //TODO: Get the response from the name_node
-    dfs_cm_file_res_t response;
-    receive_data(namenode_socket, (void *)&response, sizeof(response));
+	// Get the response
+	dfs_cm_file_res_t response;
+	receive_data(namenode_socket, (void *)&response, sizeof(response));
 
-    //TODO: Receive blocks from datanodes one by one
-
+	// Receive blocks from datanodes one by one
 	dfs_cm_block_t *block;
 	dfs_cm_block_t blocks[response.query_result.blocknum];
 
-	int i;
-	int stop = response.query_result.blocknum;
-	for (i = 0; i < stop; ++i)
+	printf("Client: pull_file Blocknumber %d\n", response.query_result.blocknum);
+	int i = 0;
+	for (; i < response.query_result.blocknum; ++i)
 	{
 		block = &(response.query_result.block_list[i]);
 		int client_socket = create_client_tcp_socket(block->loc_ip, block->loc_port);
@@ -120,20 +112,72 @@ int pull_file(int namenode_socket, const char *filename)
 		// Get the response from datanode
 		dfs_cm_block_t dnresponse;
 		receive_data(client_socket, (void *)&dnresponse, sizeof(dnresponse));
+		// printf("block content %s\n", dnresponse.content);
 		memcpy(&(blocks[dnresponse.block_id]), &dnresponse, sizeof(dfs_cm_block_t));
 		printf("Received datanode at position node: %d with block_id: %d\n", dnresponse.dn_id, dnresponse.block_id);
 	}
 
-	//Write
-
-    FILE *file = fopen(filename, "wb");
-    //TODO: resemble the received blocks into the complete file
-	for (i = 0; i < stop; ++i)
+	FILE *file = fopen(filename, "wb");
+	// resemble the received blocks into the complete file
+	printf("Writing into file: %s with content: \n", filename);
+	for (i = 0; i < response.query_result.blocknum; ++i)
 	{
+		//printf("content at %d is: %s\n", i, (blocks[i].content));
 		fwrite(&(blocks[i].content), DFS_BLOCK_SIZE, 1, file);
 	}
-    fclose(file);
-    return 0;
+
+	fclose(file);
+	return 0;
+ //    assert(namenode_socket != INVALID_SOCKET);
+ //    assert(filename != NULL);
+
+ //    //TODO: fill the request, and send
+ //    dfs_cm_client_req_t request;
+ //    request.req_type = 0; // 0-read
+ //    strcpy(request.file_name, filename); //set the filename
+ //    request.file_size = 0;
+ //    //WRITE the filled in request to the namenode_socket
+ //    send_data(namenode_socket, (void *) &request, sizeof(dfs_cm_client_req_t));
+
+ //    //TODO: Get the response from the name_node
+ //    dfs_cm_file_res_t response;
+ //    receive_data(namenode_socket, (void *)&response, sizeof(response));
+
+ //    //TODO: Receive blocks from datanodes one by one
+
+	// dfs_cm_block_t *block;
+	// dfs_cm_block_t blocks[response.query_result.blocknum];
+
+	// int i;
+	// int stop = response.query_result.blocknum;
+	// for (i = 0; i < stop; ++i)
+	// {
+	// 	block = &(response.query_result.block_list[i]);
+	// 	int client_socket = create_client_tcp_socket(block->loc_ip, block->loc_port);
+
+	// 	// Send request to datanode
+	// 	dfs_cli_dn_req_t dnrequest;
+	// 	dnrequest.op_type = 0;
+	// 	memcpy(&(dnrequest.block), (void *)block, sizeof(dfs_cm_block_t));
+	// 	send_data(client_socket, (void *)&dnrequest, sizeof(dnrequest));
+
+	// 	// Get the response from datanode
+	// 	dfs_cm_block_t dnresponse;
+	// 	receive_data(client_socket, (void *)&dnresponse, sizeof(dnresponse));
+	// 	memcpy(&(blocks[dnresponse.block_id]), &dnresponse, sizeof(dfs_cm_block_t));
+	// 	printf("Received datanode at position node: %d with block_id: %d\n", dnresponse.dn_id, dnresponse.block_id);
+	// }
+
+	// //Write
+
+ //    FILE *file = fopen(filename, "wb");
+ //    //TODO: resemble the received blocks into the complete file
+	// for (i = 0; i < stop; ++i)
+	// {
+	// 	fwrite(&(blocks[i].content), DFS_BLOCK_SIZE, 1, file);
+	// }
+ //    fclose(file);
+ //    return 0;
 }
 
 dfs_system_status *get_system_info(int namenode_socket)
