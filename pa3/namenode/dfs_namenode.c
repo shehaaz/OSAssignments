@@ -194,7 +194,7 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
     //Filling in the data
     memcpy(&(response.query_result), *file_image, sizeof(dfs_cm_file_t));
     //sending the data to the client_socket
-    send_data(client_socket, (void *)&response, sizeof(response));
+    send_data(client_socket, (void *) &response, sizeof(dfs_cm_file_res_t));
     return 0;
 }
 
