@@ -36,11 +36,22 @@ int create_tcp_socket()
 int create_client_tcp_socket(char* address, int port)
 {
 	assert(port >= 0 && port < 65536);
-	int socket = create_tcp_socket();
-	if (socket == INVALID_SOCKET) return 1;
+	sockaddr_in endpoint_addr;
+
 	//TODO: connect it to the destination port
 
+	//create socket
+	int socket = create_tcp_socket();
+	if (socket == INVALID_SOCKET) return 1;
 
+	//fill in end-point Info
+	endpoint_addr.sin_family = AF_INET;
+	endpoint_addr.sin_port = htons(port);
+	//converts the Internet host address from the IPv4 numbers-and-dots notation into binary form
+	inet_aton(address, &(endpoint_addr.sin_addr));
+
+	//connect
+	connect(socket, (sockaddr *)&endpoint_addr, sizeof(sockaddr_in));
 
 
 	return socket;
@@ -88,6 +99,13 @@ void send_data(int socket, void* data, int size)
 	assert(size >= 0);
 	if (socket == INVALID_SOCKET) return;
 	//TODO: send data through socket
+	/*
+	 * Once a connection has been established,
+	 * both ends can both read and write to the connection.
+	 * Everything written by the client will be read by the server,
+	 * and everything written by the server will be read by the client.
+	 * */
+	write(socket,data,size);
 }
 
 /**
@@ -102,4 +120,12 @@ void receive_data(int socket, void* data, int size)
 	assert(size >= 0);
 	if (socket == INVALID_SOCKET) return;
 	//TODO: fetch data via socket
+
+	/*
+	 * Once a connection has been established,
+	 * both ends can both read and write to the connection.
+	 * Everything written by the client will be read by the server,
+	 * and everything written by the server will be read by the client.
+	 * */
+	read(socket,data,size);
 }

@@ -248,11 +248,12 @@ dfs_system_status *get_system_info(int namenode_socket)
 	//req_type: query datanodes
 	request.req_type = 2;
 
+	//send_data(namenode_socket,(void *) request,sizeof(dfs_cm_client_req_t));
 	//TODO: get the response
 	dfs_system_status *response; 
 	//get the number of data nodes
 
-	response = get_system_information(namenode_socket,request); //This function is in the namenode
+	//response = receive_data(namenode_socket, (void *) response,sizeof(dfs_system_status));
 
 	return response;		
 }
