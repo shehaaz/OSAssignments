@@ -14,7 +14,11 @@ inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 
         pthread_t p_thread;
 
-        pthread_create(&p_thread,NULL,entry_point,args);
+        if((pthread_create(&p_thread,NULL,entry_point,args)) != 0)
+        {
+        	    perror("ERROR creating thread");
+         		exit(1);
+        }
 
         thread = &p_thread;
 
@@ -27,7 +31,17 @@ inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 int create_tcp_socket()
 {
 	//create the socket and return the file descriptor
-	return socket(AF_INET, SOCK_STREAM, 0);
+	int socket;
+	socket = socket(AF_INET, SOCK_STREAM, 0);
+	
+	if((socket) == -1)
+	{
+		perror("ERROR craeting socket");
+        exit(1);
+	}
+
+
+	return socket;	
 }
 
 /**
@@ -76,18 +90,26 @@ int create_server_tcp_socket(int port)
         bzero((char *) &serv_addr, sizeof(serv_addr));
 
 	    serv_addr.sin_family = AF_INET;
-	    serv_addr.sin_addr.s_addr = INADDR_ANY;
+	    /*
+	    	When INADDR_ANY is specified in the bind call,
+       		the socket will be bound to all local interfaces
+       */
+	    serv_addr.sin_addr.s_addr = INADDR_ANY; 
 	    serv_addr.sin_port = htons(port);
 
-    if (bind(socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
-              error("ERROR on binding");
+    	if (bind(socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    	{
+    	    perror("ERROR binding");
+         	exit(1);
+    	} 
+              
 
 
-    if (listen(socket, 5) == -1) {
-                printf("error while listening\n");
-                return 1;
+    	if (listen(socket, 5) == -1) 
+    	{
+            perror("ERROR listening");
+         	exit(1);
         }      
-
 
         return socket;
 }
@@ -109,7 +131,11 @@ void send_data(int socket, void* data, int size)
          * Everything written by the client will be read by the server,
          * and everything written by the server will be read by the client.
          * */
-        write(socket,data,size);
+        if((write(socket,data,size)) == -1)
+        {
+        	perror("ERROR writing data");
+         	exit(1);
+        }
 }
 
 /**
@@ -131,5 +157,9 @@ void receive_data(int socket, void* data, int size)
          * Everything written by the client will be read by the server,
          * and everything written by the server will be read by the client.
          * */
-        read(socket,data,size);
+        if((read(socket,data,size)) == -1)
+        {
+        	perror("ERROR reading data");
+         	exit(1);
+        }
 }
