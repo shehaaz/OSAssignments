@@ -17,7 +17,7 @@ int mainLoop()
 	int server_socket = -1;
 	//TODO: create a server socket and listen on it, you can implement dfs_common.c and call it here
 
-	server_socket = create_server_tcp_socket(50059 + datanode_id); //datanode_listen_port
+	server_socket = create_server_tcp_socket(datanode_listen_port); //datanode_listen_port
 
 	assert (server_socket != INVALID_SOCKET);
 
@@ -37,9 +37,9 @@ int mainLoop()
 
 		//TODO: receive data from client_socket, and fill it to request
 
-		read(client_socket, (void *)&request, sizeof(request));
+		//read(client_socket, (void *)&request, sizeof(request));
 
-		//receive_data(client_socket,(void *) &request,sizeof(dfs_cli_dn_req_t));
+		receive_data(client_socket,(void *) &request,sizeof(dfs_cli_dn_req_t));
 
 		requests_dispatcher(client_socket, request);
 
