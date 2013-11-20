@@ -9,11 +9,16 @@
  */
 inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 {
-	// create the thread and run it
-	pthread_t * thread = (pthread_t *)malloc(sizeof(pthread_t));
-	assert(pthread_create(thread, NULL, entry_point, args) == 0);
+        //TODO: create the thread and run it
+        pthread_t *thread;
 
-	return thread;
+        pthread_t p_thread;
+
+        pthread_create(&p_thread,NULL,entry_point,args);
+
+        thread = &p_thread;
+
+        return thread;
 }
 
 /**
@@ -31,50 +36,56 @@ int create_tcp_socket()
  */
 int create_client_tcp_socket(char* address, int port)
 {
-	printf("Creating create_client_tcp_socket with port: %d\n", port);
-	fflush(stdout);
-	assert(port >= 0 && port < 65536);
-	int socket = create_tcp_socket();
+        assert(port >= 0 && port < 65536);
+        sockaddr_in endpoint_addr;
 
-	if (socket == INVALID_SOCKET) return 1;
-	// connect it to the destination port
-	sockaddr_in socketAddr;
-	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_port = htons(port);
-	// socketAddr.sin_addr.s_addr = gethostbyname(address);
+        //TODO: connect it to the destination port
 
-	// socketAddr.sin_addr.s_addr = 0x7f000001;
-	inet_aton(address, &(socketAddr.sin_addr));
-	printf("connecting to socket: %d and port %d\n", socket, port);
-	assert(connect(socket, (sockaddr *)&socketAddr, sizeof(socketAddr)) == 0);
-	return socket;
-}
+        //create socket
+        int socket = create_tcp_socket();
+        if (socket == INVALID_SOCKET) return 1;
+
+        //fill in end-point Info
+        endpoint_addr.sin_family = AF_INET;
+        endpoint_addr.sin_port = htons(port);
+        //converts the Internet host address from the IPv4 numbers-and-dots notation into binary form
+        inet_aton(address, &(endpoint_addr.sin_addr));
+
+        //connect
+        connect(socket, (sockaddr *)&endpoint_addr, sizeof(sockaddr_in));
+
+
+        return socket;}
 
 /**
  * create a socket listening on the certain local port and return
  */
 int create_server_tcp_socket(int port)
 {
-	assert(port >= 0 && port < 65536);
-	int socket = create_tcp_socket();
-	if (socket == INVALID_SOCKET) return 1;
-	// listen on local port
-	sockaddr_in socketAddr;
-  memset(&socketAddr, '0', sizeof(socketAddr));
+        assert(port >= 0 && port < 65536);
+        
+        int socket = create_tcp_socket();
+        if (socket == INVALID_SOCKET) return 1;
+        //TODO: listen on local port
 
-	socketAddr.sin_family = AF_INET;
-	socketAddr.sin_port = htons(port);
-	socketAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	// inet_pton(AF_INET, "127.0.0.1", &(socketAddr.sin_addr));
+        struct sockaddr_in serv_addr;
+        bzero((char *) &serv_addr, sizeof(serv_addr));
 
-	if(bind(socket, (sockaddr *) &socketAddr, sizeof(socketAddr)) != 0) {
-		printf("create_server_tcp_socket: error binding to socket\n");
-		exit(1);
-	}
-	// printf("server socket: %d and port: %d\n", socket, port);
-	listen(socket, 5);
+	    serv_addr.sin_family = AF_INET;
+	    serv_addr.sin_addr.s_addr = INADDR_ANY;
+	    serv_addr.sin_port = htons(port);
 
-	return socket;
+    if (bind(socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+              error("ERROR on binding");
+
+
+    if (listen(socket, 5) == -1) {
+                printf("error while listening\n");
+                return 1;
+        }      
+
+
+        return socket;
 }
 
 /**
@@ -84,11 +95,17 @@ int create_server_tcp_socket(int port)
  */
 void send_data(int socket, void* data, int size)
 {
-	assert(data != NULL);
-	assert(size >= 0);
-	if (socket == INVALID_SOCKET) return;
-	// send data through socket
-	assert(write(socket, data, size) >= 0);
+        assert(data != NULL);
+        assert(size >= 0);
+        if (socket == INVALID_SOCKET) return;
+        //TODO: send data through socket
+        /*
+         * Once a connection has been established,
+         * both ends can both read and write to the connection.
+         * Everything written by the client will be read by the server,
+         * and everything written by the server will be read by the client.
+         * */
+        write(socket,data,size);
 }
 
 /**
@@ -99,9 +116,16 @@ void send_data(int socket, void* data, int size)
  */
 void receive_data(int socket, void* data, int size)
 {
-	assert(data != NULL);
-	assert(size >= 0);
-	if (socket == INVALID_SOCKET) return;
-	// fetch data via socket
-	assert(read(socket, data, size) >=0);
+	 	assert(data != NULL);
+        assert(size >= 0);
+        if (socket == INVALID_SOCKET) return;
+        //TODO: fetch data via socket
+
+        /*
+         * Once a connection has been established,
+         * both ends can both read and write to the connection.
+         * Everything written by the client will be read by the server,
+         * and everything written by the server will be read by the client.
+         * */
+        read(socket,data,size);
 }
