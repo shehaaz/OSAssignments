@@ -9,6 +9,7 @@ int datanode_id = 0;
 int datanode_listen_port = 0;
 char *working_directory = NULL;
 char namenode_ip[32] = { 0 };
+#define HEARTBEAT_PORT 50030;
 
 // main service loop of datanode
 int mainLoop()
@@ -37,8 +38,6 @@ int mainLoop()
 
 		//TODO: receive data from client_socket, and fill it to request
 
-		//read(client_socket, (void *)&request, sizeof(request));
-
 		receive_data(client_socket,(void *) &request,sizeof(dfs_cli_dn_req_t));
 
 		requests_dispatcher(client_socket, request);
@@ -58,7 +57,7 @@ static void *heartbeat()
 	for (;;)
 	{
 		// create a socket to the namenode, assign file descriptor id to heartbeat_socket
-		int heartbeat_socket = create_client_tcp_socket(namenode_ip, 50030);
+		int heartbeat_socket = create_client_tcp_socket(namenode_ip, HEARTBEAT_PORT);
 		assert(heartbeat_socket != INVALID_SOCKET);
 
 		//send datanode_status to namenode
