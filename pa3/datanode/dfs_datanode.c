@@ -8,6 +8,7 @@ int lastHeartbeatStamp = 0;//last time the datanode contacted the namenode
 int datanode_id = 0;
 int datanode_listen_port = 0;
 char *working_directory = NULL;
+char namenode_ip[32] = { 0 };
 
 // main service loop of datanode
 int mainLoop()
@@ -76,7 +77,6 @@ static void *heartbeat()
 int start(int argc, char **argv)
 {
 	assert(argc == 5);
-	// char namenode_ip[32] = { 0 };
 	strcpy(namenode_ip, argv[2]);
 
 	datanode_id = atoi(argv[3]);
@@ -108,9 +108,12 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 int create_block(const dfs_cli_dn_req_t* request)
 {
 	//set local variables
-	char owner_name[256] = request->block.owner_name;
-	int block_id = request->block.block_id;
-	char content[DFS_BLOCK_SIZE] = request->block.content;
+	const char * owner_name;
+	owner_name = request->block.owner_name;
+	int block_id;
+	block_id = request->block.block_id;
+	const char * content;
+	content = request->block.content;
 
 	//write to block
 	ext_write_block(owner_name, block_id, (void *) content);
