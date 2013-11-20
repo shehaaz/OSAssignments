@@ -31,17 +31,17 @@ inline pthread_t * create_thread(void * (*entry_point)(void*), void *args)
 int create_tcp_socket()
 {
 	//create the socket and return the file descriptor
-	int socket;
-	socket = socket(AF_INET, SOCK_STREAM, 0);
+	int socket_tcp;
+	socket_tcp = socket(AF_INET, SOCK_STREAM, 0);
 	
-	if((socket) == -1)
+	if((socket_tcp) == -1)
 	{
 		perror("ERROR craeting socket");
-        exit(1);
+        	exit(1);
 	}
 
 
-	return socket;	
+	return socket_tcp;	
 }
 
 /**
