@@ -44,31 +44,32 @@ int push_file(int namenode_socket, const char* local_path)
 	char buffer[DFS_BLOCK_SIZE];
 	int dn_sock_fd = 0;
 	struct sockaddr_in block_dst;
-	dfs_cm_client_req_t req;
-	dfs_cm_file_res_t res;
+	dfs_cm_client_req_t request;
+	dfs_cm_file_res_t response;
 	dfs_cli_dn_req_t push_blk_req;
 
 
 	//TODO: assign values to the fields of req
 
-	strcpy(req.file_name, local_path);
-    req.req_type = 1;
+	strcpy(request.file_name, local_path);
+    request.req_type = 1;
 
     fp = fopen(local_path, "rb");
     fseek(fp, 0, SEEK_END);
-    req.file_size = ftell(fp);
+    request.file_size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
 
 	//TODO: send request to namenode
 
-	if (send(namenode_socket, &req, sizeof(dfs_cm_client_req_t), 0) == -1) {
-        printf("error sending request to namenode\n");
-        return 1;
+	if (send(namenode_socket, &request, sizeof(dfs_cm_client_req_t), 0) == -1) 
+	{
+        	perror("ERROR sending data");
+         	exit(1);
 	}
 
 
-    void *res_buffer = &res;
+    void *res_buffer = &response;
 
     while (1) {
 
@@ -84,51 +85,57 @@ int push_file(int namenode_socket, const char* local_path)
     }
 
 	//TODO: contact to datanode
-	for (i = 0; i < res.query_result.blocknum; i++)
+	for (i = 0; i < response.query_result.blocknum; i++)
 	{
 		//TODO:send block to datanode
 
 		block_dst.sin_family = AF_INET;
-		block_dst.sin_addr.s_addr = inet_addr(res.query_result.block_list[i].loc_ip);
-        block_dst.sin_port = htons(res.query_result.block_list[i].loc_port);
+		block_dst.sin_addr.s_addr = inet_addr(response.query_result.block_list[i].loc_ip);
+        block_dst.sin_port = htons(response.query_result.block_list[i].loc_port);
 
         fseek(fp, (i * DFS_BLOCK_SIZE), SEEK_SET);
         fread(buffer, 1, DFS_BLOCK_SIZE, fp);
 
-	push_blk_req.op_type = 1;
-	strcpy(push_blk_req.block.owner_name, res.query_result.block_list[i].owner_name);
-	push_blk_req.block.block_id = i;
-	strcpy(push_blk_req.block.loc_ip, res.query_result.block_list[i].loc_ip);
-	push_blk_req.block.loc_port = res.query_result.block_list[i].loc_port;
+		push_blk_req.op_type = 1;
+		strcpy(push_blk_req.block.owner_name, response.query_result.block_list[i].owner_name);
+		push_blk_req.block.block_id = i;
+		strcpy(push_blk_req.block.loc_ip, response.query_result.block_list[i].loc_ip);
+		push_blk_req.block.loc_port = response.query_result.block_list[i].loc_port;
 
 
-	int count;
-	for (count = 0; count < DFS_BLOCK_SIZE; count++) {
-		push_blk_req.block.content[count] = buffer[count];
-	}
 
-        if ((dn_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-            printf("socket error\n");
-            return 1;
-        }
 
-        if (connect(dn_sock_fd, (struct sockaddr *) &block_dst, sizeof(block_dst)) == -1) {
-            printf("connect error\n");
-            return 1;
-        }
+	        if ((dn_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
+	        {
+	        	perror("socket error");
+	         	exit(1);
+	        }
 
-        if (send(dn_sock_fd, &push_blk_req, sizeof(dfs_cli_dn_req_t), 0) == -1) {
-            printf("error sending request to datanode\n");
-            return 1;
-        }
+	        if (connect(dn_sock_fd, (struct sockaddr *) &block_dst, sizeof(block_dst)) == -1) 
+	        {
+	        	perror("connect error");
+	         	exit(1);
+	        }
 
-        close(dn_sock_fd);
+	        int count;
+			for (count = 0; count < DFS_BLOCK_SIZE; count++) 
+			{
+				push_blk_req.block.content[count] = buffer[count];
+			}
 
-	}
+	        if (send(dn_sock_fd, &push_blk_req, sizeof(dfs_cli_dn_req_t), 0) == -1) 
+	        {
+	        	perror("sending error");
+	         	exit(1);
+	        }
 
-	fclose(fp);
+	        close(dn_sock_fd);
 
-	return 0;
+		}
+
+		fclose(fp);
+
+		return 0;
 }
 
 int pull_file(int namenode_socket, const char *filename)
@@ -152,8 +159,9 @@ int pull_file(int namenode_socket, const char *filename)
 	dfs_cm_block_t *block;
 	dfs_cm_block_t blocks[response.query_result.blocknum];
 
-	int i = 0;
-	for (; i < response.query_result.blocknum; ++i)
+	int i;
+	int stop = response.query_result.blocknum;
+	for (i = 0; i < stop; ++i)
 	{
 		block = &(response.query_result.block_list[i]);
 		int client_socket = create_client_tcp_socket(block->loc_ip, block->loc_port);
@@ -167,13 +175,12 @@ int pull_file(int namenode_socket, const char *filename)
 		// Get the response from datanode
 		dfs_cm_block_t dnresponse;
 		receive_data(client_socket, (void *)&dnresponse, sizeof(dnresponse));
-		// printf("block content %s\n", dnresponse.content);
 		memcpy(&(blocks[dnresponse.block_id]), &dnresponse, sizeof(dfs_cm_block_t));
 	}
 
 	FILE *file = fopen(filename, "wb");
 	// resemble the received blocks into the complete file
-	for (i = 0; i < response.query_result.blocknum; ++i)
+	for (i = 0; i < stop; ++i)
 	{
 		fwrite(&(blocks[i].content), DFS_BLOCK_SIZE, 1, file);
 	}
