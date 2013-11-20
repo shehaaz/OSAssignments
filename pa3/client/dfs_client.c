@@ -39,41 +39,95 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 int push_file(int namenode_socket, const char* local_path)
 {
 
-	assert(namenode_socket != INVALID_SOCKET);
-	assert(local_path != NULL);
-	FILE* file = fopen(local_path, "rb");
-	assert(file != NULL);
-
-	// Create the push request
-	dfs_cm_client_req_t request;
-
-	// fill the fields in request and
-	strcpy(request.file_name, local_path);
-	fseek(file, 0L, SEEK_END);
-	request.file_size = ftell(file);
-	fseek(file, 0L, SEEK_SET);
-	request.req_type = 1;
-	send_data(namenode_socket, (void *)&request, sizeof(request));
-
-	// Receive the response
-	dfs_cm_file_res_t response;
-	receive_data(namenode_socket, (void *)&response, sizeof(response));
+	int i, response_len = 0, len = 0;
+	FILE *fp = NULL;
+	char buffer[DFS_BLOCK_SIZE];
+	int dn_sock_fd = 0;
+	struct sockaddr_in block_dst;
+	dfs_cm_client_req_t req;
+	dfs_cm_file_res_t res;
+	dfs_cli_dn_req_t push_blk_req;
 
 
-	// Send blocks to datanodes one by one
-	int i;
-	int stop = response.query_result.blocknum;;
-	for (i = 0; i < stop; i++)
-	{
-		fread(&(response.query_result.block_list[i].content), DFS_BLOCK_SIZE, 1, file);
-		dfs_cli_dn_req_t req;
-		req.op_type = 1;
-		memcpy(&(req.block), &(response.query_result.block_list[i]), sizeof(dfs_cm_block_t));
-		int client_socket = create_client_tcp_socket(response.query_result.block_list[i].loc_ip, response.query_result.block_list[i].loc_port);
-		send_data(client_socket, (void *)&req, sizeof(req));
+	//TODO: assign values to the fields of req
+
+	strcpy(req.file_name, local_path);
+    req.req_type = 1;
+
+    fp = fopen(local_path, "rb");
+    fseek(fp, 0, SEEK_END);
+    req.file_size = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+
+	//TODO: send request to namenode
+
+	if (send(namenode_socket, &req, sizeof(dfs_cm_client_req_t), 0) == -1) {
+        printf("error sending request to namenode\n");
+        return 1;
 	}
 
-	fclose(file);
+
+    void *res_buffer = &res;
+
+    while (1) {
+
+        response_len = recv(namenode_socket, res_buffer, sizeof(dfs_cm_file_res_t), 0);
+
+        res_buffer = res_buffer + response_len;
+        len = len + response_len;
+
+        if (len == sizeof(dfs_cm_file_res_t)) {
+            break;
+        }
+
+    }
+
+	//TODO: contact to datanode
+	for (i = 0; i < res.query_result.blocknum; i++)
+	{
+		//TODO:send block to datanode
+
+		block_dst.sin_family = AF_INET;
+		block_dst.sin_addr.s_addr = inet_addr(res.query_result.block_list[i].loc_ip);
+        block_dst.sin_port = htons(res.query_result.block_list[i].loc_port);
+
+        fseek(fp, (i * DFS_BLOCK_SIZE), SEEK_SET);
+        fread(buffer, 1, DFS_BLOCK_SIZE, fp);
+
+	push_blk_req.op_type = 1;
+	strcpy(push_blk_req.block.owner_name, res.query_result.block_list[i].owner_name);
+	push_blk_req.block.block_id = i;
+	strcpy(push_blk_req.block.loc_ip, res.query_result.block_list[i].loc_ip);
+	push_blk_req.block.loc_port = res.query_result.block_list[i].loc_port;
+
+
+	int count;
+	for (count = 0; count < DFS_BLOCK_SIZE; count++) {
+		push_blk_req.block.content[count] = buffer[count];
+	}
+
+        if ((dn_sock_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+            printf("socket error\n");
+            return 1;
+        }
+
+        if (connect(dn_sock_fd, (struct sockaddr *) &block_dst, sizeof(block_dst)) == -1) {
+            printf("connect error\n");
+            return 1;
+        }
+
+        if (send(dn_sock_fd, &push_blk_req, sizeof(dfs_cli_dn_req_t), 0) == -1) {
+            printf("error sending request to datanode\n");
+            return 1;
+        }
+
+        close(dn_sock_fd);
+
+	}
+
+	fclose(fp);
+
 	return 0;
 }
 
