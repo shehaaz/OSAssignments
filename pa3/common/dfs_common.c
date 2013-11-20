@@ -51,11 +51,15 @@ int create_client_tcp_socket(char* address, int port)
         //converts the Internet host address from the IPv4 numbers-and-dots notation into binary form
         inet_aton(address, &(endpoint_addr.sin_addr));
 
-        //connect
-        connect(socket, (sockaddr *)&endpoint_addr, sizeof(sockaddr_in));
+        /* Now connect */
+        if (connect(socket, (sockaddr *)&endpoint_addr, sizeof(sockaddr_in)) < 0)
+        	{
+        		perror("ERROR connecting");
+         		exit(1);
+    		}	
 
-
-        return socket;}
+        return socket;
+}
 
 /**
  * create a socket listening on the certain local port and return
