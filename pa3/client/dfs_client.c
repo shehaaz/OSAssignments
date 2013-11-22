@@ -26,11 +26,34 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
 
 	//TODO:fill the request and send
 	dfs_cm_client_req_t request;
+
+	// fill the fields in request and send
+        strcpy(request.file_name, filename);
+        fseek(file, 0L, SEEK_END);
+        request.file_size = ftell(file);
+        fseek(file, 0L, SEEK_SET);
+        request.req_type = 1;
+        send_data(namenode_socket, (void *)&request, sizeof(request));
 	
 	//TODO: receive the response
 	dfs_cm_file_res_t response;
+	receive_data(namenode_socket, (void *)&response, sizeof(response));
+
 
 	//TODO: send the updated block to the proper datanode
+
+	// Send blocks to datanodes one by one
+        int i;
+        int stop = response.query_result.blocknum;;
+        for (i = 0; i < stop; i++)
+        {
+                fread(&(response.query_result.block_list[i].content), DFS_BLOCK_SIZE, 1, file);
+                dfs_cli_dn_req_t req;
+                req.op_type = 1;
+                memcpy(&(req.block), &(response.query_result.block_list[i]), sizeof(dfs_cm_block_t));
+                int client_socket = create_client_tcp_socket(response.query_result.block_list[i].loc_ip, response.query_result.block_list[i].loc_port);
+                send_data(client_socket, (void *)&req, sizeof(req));
+        }
 
 	fclose(file);
 	return 0;
