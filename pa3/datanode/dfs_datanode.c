@@ -98,10 +98,12 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 	
 	char buffer[DFS_BLOCK_SIZE];
 	char * owner_name = request->block.owner_name;
-	int block_id =  request->block.block_id;
+	int block_id = request->block.block_id;
 
-
-	ext_read_block(owner_name, block_id, (void *)buffer);
+	if(request != NULL){
+		ext_read_block(owner_name, block_id, (void *)buffer);
+	}
+	
 
 	//TODO:response the client with the data
 	memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
