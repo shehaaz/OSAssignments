@@ -19,30 +19,30 @@ int connect_to_nn(char* address, int port)
 
 int modify_file(char *ip, int port, const char* filename, int file_size, int start_addr, int end_addr)
 {
-	int namenode_socket = connect_to_nn(ip, port);
-	if (namenode_socket == INVALID_SOCKET) return -1;
-	FILE* file = fopen(filename, "rb");
-	assert(file != NULL);
+        int namenode_socket = connect_to_nn(ip, port);
+        if (namenode_socket == INVALID_SOCKET) return -1;
+        FILE* file = fopen(filename, "rb");
+        assert(file != NULL);
 
-	//TODO:fill the request and send
-	dfs_cm_client_req_t request;
+        //TODO:fill the request and send
+        dfs_cm_client_req_t request;
 
-	// fill the fields in request and send
+        // fill the fields in request and send
         strcpy(request.file_name, filename);
         fseek(file, 0L, SEEK_END);
         request.file_size = ftell(file);
         fseek(file, 0L, SEEK_SET);
         request.req_type = 1;
         send_data(namenode_socket, (void *)&request, sizeof(request));
-	
-	//TODO: receive the response
-	dfs_cm_file_res_t response;
-	receive_data(namenode_socket, (void *)&response, sizeof(response));
+        
+        //TODO: receive the response
+        dfs_cm_file_res_t response;
+        receive_data(namenode_socket, (void *)&response, sizeof(response));
 
 
-	//TODO: send the updated block to the proper datanode
+        //TODO: send the updated block to the proper datanode
 
-	// Send blocks to datanodes one by one
+        // Send blocks to datanodes one by one
         int i;
         int stop = response.query_result.blocknum;;
         for (i = 0; i < stop; i++)
@@ -55,9 +55,12 @@ int modify_file(char *ip, int port, const char* filename, int file_size, int sta
                 send_data(client_socket, (void *)&req, sizeof(req));
         }
 
-	fclose(file);
-	return 0;
+        fclose(file);
+        return 0;
 }
+
+
+
 
 int push_file(int namenode_socket, const char* local_path)
 {

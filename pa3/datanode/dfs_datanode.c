@@ -9,7 +9,7 @@ int datanode_id = 0;
 int datanode_listen_port = 0;
 char *working_directory = NULL;
 char namenode_ip[32] = { 0 };
-#define HEARTBEAT_PORT 50030;
+int HEARTBEAT_PORT = 50030;
 
 // main service loop of datanode
 int mainLoop()
