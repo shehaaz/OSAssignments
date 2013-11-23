@@ -101,13 +101,16 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 	int block_id = request->block.block_id;
 
 	if(request != NULL){
+		
 		ext_read_block(owner_name, block_id, (void *)buffer);
-	}
+	
 	
 
-	//TODO:response the client with the data
-	memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
-	send_data(client_socket, (void *)&(request->block), sizeof(dfs_cm_block_t));
+		//TODO:response the client with the data
+		memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
+		send_data(client_socket, (void *)&(request->block), sizeof(dfs_cm_block_t));
+
+	}
 	
 	return 0;
 }
@@ -123,8 +126,11 @@ int create_block(const dfs_cli_dn_req_t* request)
 	const char * content;
 	content = request->block.content;
 
+	if(request != NULL){
 	//write to block
 	ext_write_block(owner_name, block_id, (void *) content);
+	}
+
 	return 0;
 }
 
