@@ -95,11 +95,18 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 {
 	assert(client_socket != INVALID_SOCKET);
 	assert(request != NULL);
+	
 	char buffer[DFS_BLOCK_SIZE];
-	ext_read_block(request->block.owner_name, request->block.block_id, (void *)buffer);
+	char * owner_name = request->block.owner_name;
+	int block_id =  request->block.block_id;
+
+
+	ext_read_block(owner_name, block_id, (void *)buffer);
+
 	//TODO:response the client with the data
 	memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
 	send_data(client_socket, (void *)&(request->block), sizeof(dfs_cm_block_t));
+	
 	return 0;
 }
 
