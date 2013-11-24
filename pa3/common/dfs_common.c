@@ -63,7 +63,7 @@ int create_client_tcp_socket(char* address, int port)
         endpoint_addr.sin_family = AF_INET;
         endpoint_addr.sin_port = htons(port);
         //converts the Internet host address from the IPv4 numbers-and-dots notation into binary form
-        inet_aton(address, &(endpoint_addr.sin_addr));
+        endpoint_addr.sin_addr.s_addr = inet_addr(address);
 
         /* Now connect */
         if (connect(socket, (sockaddr *)&endpoint_addr, sizeof(sockaddr_in)) < 0)
