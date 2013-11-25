@@ -36,7 +36,7 @@ int create_tcp_socket()
 	
 	if((socket_tcp) == -1)
 	{
-		perror("ERROR craeting socket");
+		perror("ERROR creating socket");
         	exit(1);
 	}
 
