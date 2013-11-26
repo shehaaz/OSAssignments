@@ -76,10 +76,11 @@ static void *heartbeat()
 int start(int argc, char **argv)
 {
 	assert(argc == 5);
-	strcpy(namenode_ip, argv[2]);
 
-	datanode_id = atoi(argv[3]);
 	datanode_listen_port = atoi(argv[1]);
+	strcpy(namenode_ip, argv[2]);
+	datanode_id = atoi(argv[3]);
+	
 	working_directory = (char *)malloc(sizeof(char) * strlen(argv[4]) + 1);
 	strcpy(working_directory, argv[4]);
 	//start one thread to report to the namenode periodically
@@ -104,12 +105,9 @@ int read_block(int client_socket, const dfs_cli_dn_req_t *request)
 		
 		ext_read_block(owner_name, block_id, (void *)buffer);
 	
-	
-
 		//TODO:response the client with the data
 		memcpy(&(request->block.content), (void *)buffer, DFS_BLOCK_SIZE);
 		send_data(client_socket, (void *)&(request->block), sizeof(dfs_cm_block_t));
-
 	}
 	
 	return 0;

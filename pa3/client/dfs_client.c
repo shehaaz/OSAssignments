@@ -110,10 +110,10 @@ int push_file(int namenode_socket, const char* local_path)
 
     }
 
-	//TODO: contact to datanode
+	
 	for (i = 0; i < response.query_result.blocknum; i++)
 	{
-		//TODO:send block to datanode
+		
 
 		block_dst.sin_family = AF_INET;
 		block_dst.sin_addr.s_addr = inet_addr(response.query_result.block_list[i].loc_ip);
@@ -193,19 +193,23 @@ int pull_file(int namenode_socket, const char *filename)
 		block = &(response.query_result.block_list[i]);
 		int client_socket = create_client_tcp_socket(block->loc_ip, block->loc_port);
 
-		// Send request to datanode
+		if(client_socket != 0) {
+		// Send_data to DN
 		dfs_cli_dn_req_t data_node_req;
 		data_node_req.op_type = 0;
 		memcpy(&(data_node_req.block), (void *)block, sizeof(dfs_cm_block_t));
 		send_data(client_socket, (void *)&data_node_req, sizeof(data_node_req));
 
-		// Get the response from datanode
-		dfs_cm_block_t dnresponse;
-		receive_data(client_socket, (void *)&dnresponse, sizeof(dnresponse));
-		memcpy(&(blocks[dnresponse.block_id]), &dnresponse, sizeof(dfs_cm_block_t));
+		// Receive from DN
+		dfs_cm_block_t data_node_res;
+		receive_data(client_socket, (void *)&data_node_res, sizeof(data_node_res));
+		memcpy(&(blocks[data_node_res.block_id]), &data_node_res, sizeof(dfs_cm_block_t));
+		} else{
+			perror("Failed to create_client_tcp_socket: dfs_client.c");
+		}
 	}
 
-		FILE *file = NULL;
+	FILE *file = NULL;
 	file = fopen(filename, "wb");
 	// resemble the received blocks into the complete file
 	if(file != NULL){
@@ -215,6 +219,8 @@ int pull_file(int namenode_socket, const char *filename)
 		{
 		fwrite(&(blocks[i].content), DFS_BLOCK_SIZE, 1, file);
 		}
+	} else{
+		perror("Failed to create FILE: dfs_client.c");
 	}
 	fclose(file);	
 }
@@ -225,19 +231,24 @@ int pull_file(int namenode_socket, const char *filename)
 dfs_system_status *get_system_info(int namenode_socket)
 {
 	assert(namenode_socket != INVALID_SOCKET);
+	dfs_system_status *response; 
 	//TODO fill the result and send 
 	dfs_cm_client_req_t request;
 	//req_type: query datanodes
 	request.req_type = 2;
-	send_data(namenode_socket, (void *) &request, sizeof(dfs_cm_client_req_t));
+	if(namenode_socket != INVALID_SOCKET){
+		send_data(namenode_socket, (void *) &request, sizeof(dfs_cm_client_req_t));
+	
 
 	//TODO: get the response
-	dfs_system_status *response; 
+
 	//create space for the response
 	response = (dfs_system_status *) malloc(sizeof(dfs_system_status));
 	//get system information from the name_node
 	receive_data(namenode_socket, (void *) response, sizeof(dfs_system_status));
-
+	} else{
+		perror("namenode_socket was INVALID_SOCKET");
+	}
 	return response;		
 }
 

@@ -92,7 +92,10 @@ int register_datanode(int heartbeat_socket)
 		dfs_cm_datanode_status_t datanode_status;
 
 		//receive datanode's status via datanode_socket
-		receive_data(datanode_socket,(void *) &datanode_status, sizeof(dfs_cm_datanode_status_t));
+		if(datanode_socket != -1){
+			
+			receive_data(datanode_socket,(void *) &datanode_status, sizeof(dfs_cm_datanode_status_t));
+		
 
 		if (datanode_status.datanode_id < MAX_DATANODE_NUM)
 		{
@@ -114,6 +117,7 @@ int register_datanode(int heartbeat_socket)
 
 			safeMode = 0;
 		}
+	}
 		close(datanode_socket);
 	}
 	return 0;
@@ -161,34 +165,29 @@ int get_file_receivers(int client_socket, dfs_cm_client_req_t request)
 
     //TODO:Assign data blocks to datanodes, round-robin style (see the Documents)
 
-	dfs_datanode_t *data_node;
-	dfs_cm_block_t *block;
+	
     int index;
 	for (index = first_unassigned_block_index; index < stop; index++)
 	{
-
-		data_node = dnlist[next_data_node_index];
-		assert(data_node != NULL);
-
 		/*
 		 * Set the data block to the file descriptor's memory location
 		 * We will modify this memory location and memcpy it later into the response
 		 * sent to the client */
+		dfs_cm_block_t *block; 
 		block = &((*file_image)->block_list[index]);
-
 		//Populate the block
-		strcpy(block->owner_name, request.file_name);
-		strcpy(block->loc_ip, data_node->ip);
-		block->dn_id = data_node->dn_id;
+		block->dn_id = dnlist[next_data_node_index]->dn_id;
 		block->block_id = index;
-		block->loc_port = data_node->port;
+		block->loc_port = dnlist[next_data_node_index]->port;
+		strcpy(block->owner_name, request.file_name);
+		strcpy(block->loc_ip, dnlist[next_data_node_index]->ip);
 
 		//Using the technique learnt in class to find the next free index
 		next_data_node_index = (next_data_node_index + 1) % (dncnt);
 	}
 
     dfs_cm_file_res_t response;
-    memset(&response, 0, sizeof(response));
+    bzero((char *) &response, sizeof(response));
     //TODO: fill the response and send it back to the client
 
     //Filling in the data
@@ -223,7 +222,6 @@ int get_file_location(int client_socket, dfs_cm_client_req_t request)
 
 	 	return 0;
 	 }
-	 //FILE NOT FOUND
 	 return 1;
 }
 
@@ -252,14 +250,12 @@ int get_file_update_point(int client_socket, dfs_cm_client_req_t request)
 		dfs_cm_file_res_t response;
 		//TODO: fill the response and send it back to the client
 		// Send back the data block assignments to the client
-		memset(&response, 0, sizeof(response));
+		bzero((char *) &response, sizeof(response));
 		memcpy(&(response.query_result), file_image, sizeof(dfs_cm_file_t));
-		//printf("Namenode: sending update point of %s\n", response.query_result.file_name);
-
 		send_data(client_socket, (void *)&response, sizeof(dfs_cm_file_res_t));
 		return 0;
 	}
-	//FILE NOT FOUND
+
 	return 1;
 }
 
